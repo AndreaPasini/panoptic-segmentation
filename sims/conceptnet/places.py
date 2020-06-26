@@ -3,7 +3,7 @@ import json
 import pandas as pd
 from networkx import MultiDiGraph
 from config import places_json_path, conceptnet_coco_places_csv_path
-from semantic_analysis.conceptnet.utils import get_readable_concepts, get_coco_concepts_map, coco_to_concept
+from sims.conceptnet.utils import get_readable_concepts, get_coco_concepts_map, coco_to_concept
 
 
 class Conceptnet:

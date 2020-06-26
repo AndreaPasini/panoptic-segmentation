@@ -29,8 +29,8 @@ from panopticapi.utils import load_png_annotation
 
 import pyximport
 pyximport.install(language_level=3)
-from semantic_analysis.graph_utils import nx_to_json
-from semantic_analysis.relative_position.feature_extraction import image2strings, compute_string_positions, get_features
+from sims.graph_utils import nx_to_json
+from sims.scene_graphs.feature_extraction import image2strings, compute_string_positions, get_features
 
 
 def __getClassifiersGridSearch():
@@ -163,9 +163,10 @@ def build_final_model(output_model_file, final_classifier):
     __removeFile(output_model_file)
     pickle.dump(final_classifier, open(output_model_file, 'wb'))
 
-def compute_graph_from_image(image_name, image_id, segments_info, cat_info, annot_folder, model):
+def image2scene_graph(image_name, image_id, segments_info, cat_info, annot_folder, model):
     """
-    Apply position classifier to this image.
+    ** Applicable to data with COCO dataset format. **
+    Apply position classifier to this image, compute scene graph
     In each relationships, the order of the pair subject-reference is chosen based on alphabetical order.
     E.g. (ceiling, floor) instead of (floor, ceiling)
     :param image_name: file name of the image
@@ -174,7 +175,7 @@ def compute_graph_from_image(image_name, image_id, segments_info, cat_info, anno
     :param cat_info: COCO category information
     :param annot_folder: path to annotations
     :param model: relative-position classifier
-    :return the image converted to graph
+    :return the scene graph
     """
     if len(segments_info)==0:
         print('Image has no segments.')
@@ -201,14 +202,14 @@ def compute_graph_from_image(image_name, image_id, segments_info, cat_info, anno
         g.add_edge(s, r, pos=prediction)
     return g
 
-def create_kb_graphs(fileModel_path, COCO_json_path, COCO_ann_dir, out_graphs_json_path):
+def create_scene_graphs(fileModel_path, COCO_json_path, COCO_ann_dir, out_graphs_json_path):
     """
-    Analyze annotations, by applying classifier
-    Generate image graphs, with descriptions
+    ** Applicable to data with COCO dataset format. **
+    Generate scene graphs from images, applying the relative position classifier
     :param fileModel_path: path to relative position model
     :param COCO_json_path: annotation file with classes for each segment (either CNN annotations or ground-truth)
     :param COCO_ann_dir: folder with png annotations (either CNN annotations or ground-truth)
-    :param out_graphs_json_path: output json file with graphs
+    :param out_graphs_json_path: output json file with scene graphs
     """
 
     loaded_model = pickle.load(open(fileModel_path, 'rb'))
@@ -248,8 +249,8 @@ def create_kb_graphs(fileModel_path, COCO_json_path, COCO_ann_dir, out_graphs_js
     # Analyze all images
     for img in files:
         if img.endswith('.png'):
-            results.append(pool.apply_async(compute_graph_from_image, args=(img, id_dict[img], annot_dict[img],
-                                            cat_dict, COCO_ann_dir, loaded_model), callback=update))
+            results.append(pool.apply_async(image2scene_graph, args=(img, id_dict[img], annot_dict[img],
+                                                                     cat_dict, COCO_ann_dir, loaded_model), callback=update))
     pool.close()
     pool.join()
     pbar.close()

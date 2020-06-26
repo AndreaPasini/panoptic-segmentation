@@ -2,10 +2,18 @@
 import json
 import networkx as nx
 from config import VG_predicates_json_path, VG_objects_json_path
-from semantic_analysis.graph_utils import nx_to_json
+from sims.graph_utils import nx_to_json
 
 
-def vgann_to_graph(ann_id, ann, obj_list, rel_list):
+def vgann2scene_graph(ann_id, ann, obj_list, rel_list):
+    """
+    Build scene graph from visual genome annotation.
+    :param ann_id: img id
+    :param ann: annotation, json
+    :param obj_list: list of object classes
+    :param rel_list: list of object relationships
+    :return:
+    """
     bbox_to_id = {}
     new_id = 0
     g = nx.DiGraph()
@@ -26,10 +34,10 @@ def vgann_to_graph(ann_id, ann, obj_list, rel_list):
         g.add_edge(s, r, pos=rel_list[el['predicate']])
     return g
 
-def create_kb_graphs_vg(VG_ann_path, out_graphs_json_path):
+def create_scene_graphs_vg(VG_ann_path, out_graphs_json_path):
     """
     Analyze Visual Genome (VG) annotations
-    Generate image graphs, with descriptions
+    Generate scene graphs
     :param VG_ann_path: VG annotation file (relationships)
     :param out_graphs_json_path: output json file with graphs
     """
@@ -43,7 +51,7 @@ def create_kb_graphs_vg(VG_ann_path, out_graphs_json_path):
     graphs = []
     for img_id, ann in annotations.items():
         img_id = img_id.split(".")[0]
-        g = vgann_to_graph(img_id, ann, obj_list, rel_list)
+        g = vgann2scene_graph(img_id, ann, obj_list, rel_list)
         graphs.append(nx_to_json(g))
     with open(out_graphs_json_path, 'w') as f:
         json.dump(graphs, f)

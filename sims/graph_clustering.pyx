@@ -7,9 +7,9 @@ from networkx.algorithms.isomorphism import categorical_node_match, categorical_
 from tqdm import tqdm
 
 from config import trainimage_freqgraph_csv_path, freqgraph_place_csv_path, trainimage_place_csv_path
-from semantic_analysis.conceptnet.places import Conceptnet
-from semantic_analysis.graph_mining import prepare_graphs_with_KB, get_exp_name, read_freqgraphs
-from semantic_analysis.graph_utils import json_to_nx
+from sims.conceptnet.places import Conceptnet
+from sims.graph_mining import prepare_graphs_with_PRS, get_exp_name, read_freqgraphs
+from sims.graph_utils import json_to_nx
 
 def subgraph_isomorphism(subgraph, graph):
     """
@@ -49,7 +49,7 @@ def compute_image_freqgraph_count_mat(experiment):
     :param experiment: experiment configuration (dictionary)
     """
     # Read training graphs
-    train_graphs_filtered = prepare_graphs_with_KB(experiment)
+    train_graphs_filtered = prepare_graphs_with_PRS(experiment)
     # Read frequent graphs
     freq_graphs = read_freqgraphs(experiment)
     pbar = tqdm(total=len(train_graphs_filtered))

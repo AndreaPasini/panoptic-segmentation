@@ -1,6 +1,6 @@
 import pyximport
 pyximport.install(language_level=3)
-from semantic_analysis.knowledge_base import get_likelihood
+from sims.prs import get_likelihood
 
 
 def inspect_anomalies2(image_graph, kb, pq_stat, anomaly_stat, thr):

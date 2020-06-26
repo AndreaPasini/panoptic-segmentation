@@ -5,8 +5,8 @@ from config import position_labels_csv_path
 from panopticapi.utils import load_panoptic_categ_list
 import pyximport
 pyximport.install(language_level=3)
-from semantic_analysis.subdue_mining.graph_utils import json_graph_to_subdue
-from semantic_analysis.graph_utils import nx_to_json
+from sims.subdue_mining.graph_utils import json_graph_to_subdue
+from sims.graph_utils import nx_to_json
 
 def prepare_subdue_graph_data(freq_graphs_output_path, graphs, obj_categories, rel_categories):
     """

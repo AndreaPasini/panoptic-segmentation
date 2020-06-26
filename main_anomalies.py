@@ -4,8 +4,8 @@ from PIL import Image
 
 from config import out_panoptic_json_path, out_panoptic_dir, \
     COCO_val_json_path, \
-    COCO_ann_val_dir, kb_pairwise_json_path, anomaly_detection_dir, \
-    out_panoptic_val_graphs_json_path, \
+    COCO_ann_val_dir, COCO_PRS_json_path, anomaly_detection_dir, \
+    COCO_panoptic_val_graphs_json_path, \
     pq_info_path, pairanomaly_kbfilter_json_path, \
     objectanomaly_kbfilter_json_path, objectanomaly_json_path, pairanomaly_json_path
 from main_inspection import pq_inspection
@@ -13,8 +13,8 @@ import pyximport
 pyximport.install(language_level=3)
 from tqdm import tqdm
 from panopticapi.utils import rgb2id
-from semantic_analysis.anomaly_detection import inspect_anomalies, inspect_anomalies2
-from semantic_analysis.knowledge_base import filter_kb_histograms, get_sup_ent_lists
+from sims.anomaly_detection import inspect_anomalies, inspect_anomalies2
+from sims.prs import filter_PRS_histograms, get_sup_ent_lists
 from scipy.stats import entropy
 import numpy as np
 
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         filter_kb = False   #Whether to filter KB with max entropy for detecting anomalies
         obj_anom_thr = 0.01 # Threshold for detecting an anomalous link on object anomalies
     # Load KB
-    with open(kb_pairwise_json_path, 'r') as f:
+    with open(COCO_PRS_json_path, 'r') as f:
         kb = json.load(f)
     # Get support and entropy
     sup, entr = get_sup_ent_lists(kb)
@@ -148,9 +148,9 @@ if __name__ == "__main__":
     min_sup = int(round(10**med))
     # Filter KB
     if RUN_CONFIG.filter_kb:
-        kb_filtered = filter_kb_histograms(kb, min_sup, max_entropy)
+        kb_filtered = filter_PRS_histograms(kb, min_sup, max_entropy)
     else:
-        kb_filtered = filter_kb_histograms(kb, min_sup, 100)# No filter
+        kb_filtered = filter_PRS_histograms(kb, min_sup, 100)# No filter
 
     # Load ground truth (segmentations)
     with open(COCO_val_json_path, 'r') as f:
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     with open(out_panoptic_json_path, 'r') as f:
         pred_json = json.load(f)
     # Load graphs (predictions)
-    with open(out_panoptic_val_graphs_json_path, 'r') as f:
+    with open(COCO_panoptic_val_graphs_json_path, 'r') as f:
         panoptic_graphs_json = json.load(f)
 
     if RUN_CONFIG.compute_pq_stats:
