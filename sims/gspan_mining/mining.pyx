@@ -44,7 +44,7 @@ def run_gspan_mining(graphs_data_path, minsup, output_path, obj_categories, rel_
     :param rel_categories: list -> rel_categories[catId] = textual category for relationships
     """
     print("Gspan - Mining frequent graphs...")
-    os.system(f"./semantic_analysis/gspan_mining/gSpan-64 -f {graphs_data_path} -s {minsup} -o")
+    os.system(f"./sims/gspan_mining/gSpan-64 -f {graphs_data_path} -s {minsup} -o")
     print("Mining complete. Converting graphs...")
     print(graphs_data_path)
     freq_graphs = __read_gspan_output(f'{graphs_data_path}.fp', obj_categories, rel_categories)

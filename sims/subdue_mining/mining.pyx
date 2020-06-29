@@ -42,7 +42,7 @@ def run_subdue_mining(graphs_data_path, nsubs, output_path, obj_categories, rel_
     :param rel_categories: list -> rel_categories[catId] = textual category for relationships
     """
     print("Subdue - Mining best substuctures...")
-    os.system(f"./semantic_analysis/subdue_mining/subdue -minsize 2 -nsubs {nsubs} {graphs_data_path} > {output_path+'.txt'}")
+    os.system(f"./sims/subdue_mining/subdue -minsize 2 -nsubs {nsubs} {graphs_data_path} > {output_path+'.txt'}")
     print("Mining complete. Converting graphs...")
     print(graphs_data_path)
     freq_graphs = __read_subdue_output(output_path+'.txt', obj_categories, rel_categories)

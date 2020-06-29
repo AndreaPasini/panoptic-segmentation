@@ -10,7 +10,7 @@ from scipy.stats import entropy
 
 from config import COCO_SGS_dir, COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, COCO_PRS_dir, \
     COCO_PRS_json_path
-from sims.sims_config import MiningConf, SImS_config
+from sims.sims_config import SImS_config
 from sims.prs import filter_PRS_histograms
 
 pyximport.install(language_level=3)
@@ -66,7 +66,7 @@ def main():
     class RUN_CONFIG:
         compute_SGS = False          # Compute the Scene Graph Summary
         analyze_SGS = False          # Plot table with statistics for the different mining methods
-        print_SGS_graphs = True    # Plot SGS scene graphs
+        print_SGS_graphs = False    # Plot SGS scene graphs
         compute_image_freqgraph_count_mat = False   # Associate training COCO images to frequent graphs (7 minutes)
         compute_freqgraph_place_count_mat = False   # Associate frequent graphs to places
         compute_image_place_count_mat = False       # Associate training COCO images to places

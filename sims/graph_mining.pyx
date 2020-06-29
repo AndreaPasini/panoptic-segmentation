@@ -36,7 +36,7 @@ def prepare_graphs_with_PRS(simsConf):
     config = simsConf.SGS_params
     edge_pruning_str ="_eprune" if config['edge_pruning'] else ""
     node_pruning_str = "_nprune" if config['node_pruning'] else ""
-    output_file = os.path.join(simsConf.SGS_dir, f"sgs{edge_pruning_str}{node_pruning_str}.json")
+    output_file = os.path.join(simsConf.SGS_dir, f"preparedGraphs{edge_pruning_str}{node_pruning_str}.json")
     # Check whether graph data has already been created
     if not os.path.exists(output_file):
         # Read PRS
@@ -82,7 +82,7 @@ def build_SGS(simsConf):
     # Load dataset categories
     obj_categories, rel_categories = simsConf.load_categories()
 
-    input_graphs_data_path = os.path.join(simsConf.SGS_dir, f"sgs{edge_pruning}{node_pruning}_{config['alg']}.data")
+    input_graphs_data_path = os.path.join(simsConf.SGS_dir, f"preparedGraphs{edge_pruning}{node_pruning}_{config['alg']}.data")
     exp_name = get_exp_name(simsConf)
     sgs_graphs_path = os.path.join(simsConf.SGS_dir, exp_name + '.json')
 
