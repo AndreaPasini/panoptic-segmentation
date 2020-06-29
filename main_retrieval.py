@@ -1,11 +1,9 @@
 import json
-import os
 from scipy.stats import entropy
 import pyximport
 pyximport.install(language_level=3)
-from config import COCO_train_graphs_json_path, COCO_img_val_dir, COCO_panoptic_val_graphs_json_path
-from config import COCO_img_train_dir, COCO_ann_train_dir, COCO_PRS_json_path
-from image_analysis.ImageProcessing import getImageName
+from config import COCO_panoptic_val_graphs_json_path
+from config import COCO_PRS_json_path
 from sims.prs import filter_PRS_histograms, get_sup_ent_lists
 from tqdm import tqdm
 def get_positive_relationships(graph, kb):

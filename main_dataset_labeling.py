@@ -14,7 +14,7 @@ from tqdm import tqdm
 import random
 
 from config import position_dataset_dir, COCO_train_json_path, COCO_ann_train_dir, position_labels_csv_path
-from image_analysis.ImageProcessing import getImageName, getImage
+from sims.scene_graphs.image_processing import getImageName, getImage
 from panopticapi.utils import load_png_annotation
 
 import pyximport

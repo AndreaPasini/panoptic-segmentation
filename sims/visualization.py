@@ -1,7 +1,7 @@
 import os
 
 from config import COCO_ann_val_dir, COCO_img_val_dir, COCO_ann_train_dir, COCO_img_train_dir
-from image_analysis.ImageProcessing import mask_baricenter, getImageName
+from sims.scene_graphs.image_processing import mask_baricenter, getImageName
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import cv2
