@@ -41,16 +41,23 @@ def nx_to_graphviz(graph, weighted_edges=True):
     g_viz.graph_attr.update(dpi="150")
     return g_viz
 
-def json_to_graphviz(graph, fontsize=16, fillcolor="#d4eaff"):
+def json_to_graphviz(graph, fontsize=16, fillcolor="#d4eaff", clean_class_names=False):
     """
     Convert json graph (node-link-data) to Graphviz printable graph
     :param graph: json graph to be converted
     :param fontsize: in pt, text size for nodes and edges
     :param fillcolor: string with hex color to fill nodes
+    :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
     """
     g_viz = graphviz.Digraph()
     for n in graph['nodes']:
-        g_viz.node(str(n['id']), label=n['label'])
+        if clean_class_names and '-other-merged' in n['label']:
+            nlabel = n['label'].replace('-other-merged', '')
+        elif clean_class_names and '-merged' in n['label']:
+            nlabel = n['label'].replace('-merged', '')
+        else:
+            nlabel = n['label']
+        g_viz.node(str(n['id']), label=nlabel)
     for l in graph['links']:
         g_viz.edge(str(l['s']), str(l['r']), label=l['pos'])
     g_viz.node_attr.update(style="filled", fillcolor=fillcolor, fontsize=str(fontsize))

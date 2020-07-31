@@ -124,6 +124,13 @@ def read_freqgraphs(simsConf):
         freq_graphs = json.load(f)
     return freq_graphs
 
+
+
+
+
+## TODO insert maximal itemsets.
+
+
 def analyze_graphs(simsConf):
     """
     Compute statistics (avg. nodes, distinct classes, ...) on the extracted frequent subgraphs.
@@ -175,17 +182,17 @@ def analyze_graphs(simsConf):
                 "Std. nodes": round(np.std(std_nodes),2)}
     return res_dict
 
-
-def print_graphs(simsConf, subsample=True, pdfformat=True, alternate_colors=True, reformat_class_labels=True):
+def load_and_print_fgraphs(simsConf, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
     """
-    Print graphs to files
+    Load SGS frequent graphs and print to files
     :param simsConf: experimental configuration class
     :param subsample: subsample graphs if >500
     :param pdfformat: True to print pdf, False to print png
     :param alternate_colors: True if you want to alternate different colors for nodes
+    :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
     """
     exp_name = get_exp_name(simsConf)
-    # Read
+    # Read frequent graphs
     sel_freq_graphs_path = os.path.join(simsConf.SGS_dir, exp_name + '.json')
     with open(sel_freq_graphs_path, 'r') as f:
         graphs = json.load(f)
@@ -193,6 +200,20 @@ def print_graphs(simsConf, subsample=True, pdfformat=True, alternate_colors=True
     out_path = os.path.join(simsConf.SGS_dir, f"charts/{exp_name}")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
+    # Print graphs
+    print_graphs(graphs, out_path, subsample, pdfformat, alternate_colors, clean_class_names)
+
+
+def print_graphs(graphs, out_path, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
+    """
+    Print graphs to files
+    :param graphs: list of graphs to be displayed or None if simsConf is specified
+    :param out_path: existing output folder
+    :param subsample: subsample graphs if >500
+    :param pdfformat: True to print pdf, False to print png
+    :param alternate_colors: True if you want to alternate different colors for nodes
+    :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
+    """
     # Subsampling of graphs
     if type(subsample) is list:
         iter_graphs = [(i,g) for i,g in enumerate(graphs) if i in subsample]
@@ -206,16 +227,9 @@ def print_graphs(simsConf, subsample=True, pdfformat=True, alternate_colors=True
     format = "pdf" if pdfformat else "png"
 
     for i, g_dict in iter_graphs:
-        if reformat_class_labels:
-            for n in g_dict['g']['nodes']:
-                if '-other-merged' in n['label']:
-                    n['label'] = n['label'].replace('-other-merged', '')
-                elif '-merged' in n['label']:
-                    n['label'] = n['label'].replace('-merged', '')
-
         sup = g_dict['sup']
         #g = json_to_graphviz(node_pruning([g_dict['g']])[0], fillcolor=fillcolors[0])
-        g = json_to_graphviz(g_dict['g'], fillcolor=fillcolors[0])
+        g = json_to_graphviz(g_dict['g'], fillcolor=fillcolors[0], clean_class_names=clean_class_names)
         if alternate_colors:
             fillcolors.reverse()
         with open(f"{out_path}/g{i}_s_{sup}.{format}", "wb") as f:

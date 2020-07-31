@@ -17,7 +17,7 @@ pyximport.install(language_level=3)
 from sims.conceptnet.places import Conceptnet
 from sims.graph_clustering import compute_image_freqgraph_count_mat, compute_freqgraph_place_count_mat, \
     compute_image_place_count_mat
-from sims.graph_mining import build_SGS, print_graphs, analyze_graphs
+from sims.graph_mining import build_SGS, load_and_print_fgraphs, analyze_graphs
 import pandas as pd
 from sims.graph_utils import print_graph_picture
 from sims.graph_utils import json_to_nx
@@ -144,12 +144,12 @@ def main():
         # Print graphs to file
 
         # For the 4 article images (issues of graph mining), exp=11
-        #print_graphs(config, subsample = [154, 155, 784, 786])
+        #load_and_print_fgraphs(config, subsample = [154, 155, 784, 786])
         # For the 2 examples on node pruning
-        #print_graphs(config, subsample=[1175])
+        #load_and_print_fgraphs(config, subsample=[1175])
 
-        # print_graphs(config, subsample=list(range(1100, 1190)))
-        print_graphs(config)
+        # load_and_print_fgraphs(config, subsample=list(range(1100, 1190)))
+        load_and_print_fgraphs(config)
 
 
     if RUN_CONFIG.compute_image_freqgraph_count_mat:
