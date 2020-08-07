@@ -1,13 +1,11 @@
 from __future__ import absolute_import, division, print_function
 import os
-import numpy as np
 import PIL.Image as pil
-import matplotlib.pyplot as plt
 import cv2
 import torch
 from torchvision import transforms
-import networks
-from utils import download_model_if_doesnt_exist
+from monodepth import networks
+from monodepth.utils import download_model_if_doesnt_exist
 
 class Monodepth:
     def __init__(self):

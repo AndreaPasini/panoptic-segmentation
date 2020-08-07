@@ -32,6 +32,12 @@ out_panoptic_json_path = os.path.join(out_panoptic_dir, 'panoptic.json') # Outpu
 pq_info_path = os.path.join(out_panoptic_dir, 'panoptic_quality.json') # Panoptic quality of all objects in predictions
 
 """
+Depth prediction.
+"""
+out_depth_train_dir = os.path.join(COCO_dir, 'output/depth/train2017')
+out_depth_val_dir = os.path.join(COCO_dir, 'output/depth/val2017')
+
+"""
 Scene graphs extracted from COCO and VG
 """
 # Scene graphs of COCO train
