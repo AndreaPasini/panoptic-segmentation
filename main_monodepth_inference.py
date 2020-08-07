@@ -12,8 +12,6 @@ import time
 from multiprocessing import Pool
 
 def run_model(img_ids, input_dir, output_dir):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
 
     pid = getpid()
 
@@ -52,6 +50,9 @@ def main():
     elif RUN_CONFIG.compute_val2017_depth==True:
         output_dir = out_depth_val_dir
         input_dir = COCO_img_val_dir
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
 
     # Files to be analyzed
