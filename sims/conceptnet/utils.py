@@ -96,7 +96,7 @@ def create_places_list(output_path):
                   "chapel", "bar", "basement", "vineyard", "bathroom", "room", "motel", "meadows"]
     print(f"Manually selected sub-places: {len(sub_places)}")
     # Manually added places (that do not have relationships with "place")
-    sel_places.extend(["railroad"])
+    sel_places.extend(["railroad","outside"])
     # Remove "Place"
     sel_places.remove("place")
     # Save to json

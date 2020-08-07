@@ -1,8 +1,12 @@
 import os
 from datetime import datetime
 import pyximport
+
+from sims.conceptnet.places import Conceptnet
+from sims.graph_utils import json_to_nx, print_graph_picture
+
 pyximport.install(language_level=3)
-from sims.graph_mining import read_freqgraphs, print_graphs
+from sims.graph_mining import read_freqgraphs, print_graphs, load_and_print_fgraphs
 from sims.sims_config import SImS_config
 import pandas as pd
 
@@ -51,20 +55,86 @@ def get_maximal_itemsets(freq_graphs):
 
     maximal_graphs = []
     maximal_itemsets = set(maximal_itemsets)
+    # Add to result only maximal itemsets
     for itemset, graphs in itemset2graph.items():
         if itemset in maximal_itemsets:
-            maximal_graphs.extend(graphs)
+            if len(graphs)>1: # between more graphs choose the one with highest support
+                max_graph = None
+                for g in graphs:
+                    if max_graph is None or g['sup']>max_graph['sup']:
+                        max_graph=g
+                maximal_graphs.append(max_graph)
+            else:
+                maximal_graphs.append(graphs[0])
     return maximal_graphs
 
 
+
 if __name__ == "__main__":
+    ### Choose methods to be run ###
+    class RUN_CONFIG:
+        print_maximal = False # Print maximal-itemset graphs
+        compute_image_freqgraph_count_mat = False  # Associate training COCO images to frequent graphs (7 minutes)
+        compute_freqgraph_place_count_mat = False  # Associate frequent graphs to places
+        compute_image_place_count_mat = False  # Associate training COCO images to places
+        associate_to_freq_graphs = False
+
     start_time = datetime.now()
     # Load configuration for COCO and default frequent graphs
     config = SImS_config('COCO')
     # Read frequent graphs, given configuration
     fgraphs = read_freqgraphs(config)
-    maximal = get_maximal_itemsets(fgraphs)
-    out_path = os.path.join(config.SGS_dir,'maximal')
-    os.makedirs(out_path)
-    print_graphs(maximal, out_path)
-    print('Done')
+    maximal_fgraphs = get_maximal_itemsets(fgraphs)
+
+    if RUN_CONFIG.print_maximal:
+        out_path = os.path.join(config.SGS_dir,'charts/maximal')
+        if not os.path.exists(out_path):
+            os.makedirs(out_path)
+        # Print maximal-itemset graphs
+        print_graphs(maximal_fgraphs, out_path)
+
+    conceptnet = Conceptnet()
+
+    for i, g in enumerate(maximal_fgraphs):
+        rank = conceptnet.rank_related_places(g['g'], antonyms=False)
+        if len(rank) > 1:
+            print_graph_picture(f"{config.SGS_dir}/charts/places/{rank[0][0]}_{rank[1][0]}_{i}.png", json_to_nx(g['g']))
+        elif len(rank) > 0:
+            print_graph_picture(f"{config.SGS_dir}/charts/places/{rank[0][0]}_{i}.png",
+                                    json_to_nx(g['g']))
+        else:
+            print_graph_picture(f"{config.SGS_dir}/charts/places/g_{i}.png",
+                                json_to_nx(g['g']))
+    # if RUN_CONFIG.associate_to_freq_graphs:
+    #     with open(os.path.join(COCO_SGS_dir, 'train_freqGraph_kbfilter_prune_gspan_005.json')) as f:
+    #         freq_graphs = json.load(f)
+    #     conceptnet = Conceptnet()
+    #
+    #     def associate_graph(g, i):
+    #         rank = conceptnet.rank_related_places(g['g'])
+    #         if len(rank) > 0:
+    #             print_graph_picture(f"{COCO_SGS_dir}/clusters/{rank[0][0]}_{i}.png", json_to_nx(g['g']))
+    #
+    #     for i, g in enumerate(freq_graphs):
+    #         associate_graph(g, i)
+    #
+    # if RUN_CONFIG.compute_image_freqgraph_count_mat:
+    #     print(f"Selected experiment: {experiments[selected_experiment]}")
+    #     start_time = datetime.now()
+    #     compute_image_freqgraph_count_mat(experiment)
+    #     end_time = datetime.now()
+    #     print('Duration: ' + str(end_time - start_time))
+    # if RUN_CONFIG.compute_freqgraph_place_count_mat:
+    #     print(f"Selected experiment: {experiments[selected_experiment]}")
+    #     start_time = datetime.now()
+    #     compute_freqgraph_place_count_mat(experiment)
+    #     end_time = datetime.now()
+    #     print('Duration: ' + str(end_time - start_time))
+    #
+    # if RUN_CONFIG.compute_image_place_count_mat:
+    #     print(f"Selected experiment: {experiments[selected_experiment]}")
+    #     start_time = datetime.now()
+    #     compute_image_place_count_mat()
+    #     end_time = datetime.now()
+    #     print('Duration: ' + str(end_time - start_time))
+    # print('Done')

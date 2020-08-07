@@ -22,12 +22,13 @@ class Conceptnet:
             places_json = json.load(f)
         self.places = places_json['places'] + places_json['sub-places']
 
-    def related_to(self, concepts, antonyms=False):
+    def get_related_concepts(self, concepts, antonyms=False):
         """
-        Retrieve all relationships related to the specified set of concepts.
-        Relationships in the graph are associated with 'rel' (type of relationship) and 'weight' (strength of rel.)
+        Retrieve all relationships connected to at least one of the specified concepts.
+        Edges in the result graph present the following attributes:
+            'rel' (type of relationship), 'weight' (strength of rel. according to Conceptnet)
         :param concepts: set of concepts
-        :param antonyms: True if you want to include Antonym relationships
+        :param antonyms: True if you want to include in the result Antonym relationships
         :return: Networkx graph with relationships that have one of the specified concepts in subject or reference
         """
         rows = self.df_conceptnet.loc[lambda x: (x[2].isin(concepts)) | (x[3].isin(concepts))]
@@ -38,13 +39,15 @@ class Conceptnet:
                 g.add_edge(row[1][2], row[1][3], rel=row[1][1], weight=float(jsondict['weight']))
         return g
 
-    def related_to_place(self, concepts, antonyms=False):
+    def get_related_places(self, concepts, antonyms=False):
         """
-        Retrieve relationships of the type:
+        Retrieve all relationships that connect one of the specified concept with a place.
+        Specifically, selects from Conceptnets the triplets of the type:
         concept [RelatedTo, AtLocation, LocatedNear, PartOf, Antonym] place
         place [RelatedTo, AtLocation, LocatedNear, HasA, MadeOF, Antonym] concept
-        Relationships in the graph are associated with 'rel' (type of relationship) and 'weight' (strength of rel.)
-        For "AtLocation" relationships has also
+        Edges in the result graph present the following attributes:
+            'rel' (type of relationship), 'weight' (strength of rel. according to Conceptnet)
+        For "AtLocation", 'rel' contains also the position type (e.g. on, above, below, ...) retrieved from surface text
         :param concepts: set of concepts
         :param antonyms: True if you want to include Antonym relationships
         :return: Networkx graph with the selected relationships
@@ -72,51 +75,74 @@ class Conceptnet:
     def __rank_related_places(self, concept_graph, concepts):
         """
         Use rank_related_places() instead of this function.
-        Given a graph with conceptnet relationships (use: related_to_place()), extract the place that better describes
-        the graph. Important: some concepts may be places! (e.g. desk)
-        For each place, for each concept score=sum(max(edge_weights(place,concept))).
-        (A place may have multiple edges with the same concept)
-        Rank places based on the score.
+        Given a graph with conceptnet relationships (containing concepts and places),
+        rank the places in the graph to find those that are most representative.
+
+        The rank score encourages places that are more connected to other concepts in the graph.
+             score(place)=sum( [max(edge_weights(place,concept)) for all concepts] )
+        (max is necessary because there may be >1 edges between a place and a concept)
+
         :param concept_graph: Networkx graph with Conceptnet relationships
-        :param concepts: list of concepts to be considered (other names are considered as places)
+        :param concepts: list of concepts in the original COCO graph
         """
         related_places = {}
         # For each graph node that is a place
         for n in concept_graph.nodes:
-            if n in concepts:  # Must be a place
+
+            if n not in self.places:  # Must be a Conceptnet place
                 continue
             # Get inbound and outbound edges of this node
             in_edges = [(e[0], e[2]['weight'], e[2]['rel']) for e in concept_graph.in_edges(n, data=True)]
             out_edges = [(e[1], e[2]['weight'], e[2]['rel']) for e in concept_graph.out_edges(n, data=True)]
 
-            connections = {}
-            # Collect all edge weights for each connection (a place may have multiple edges with the same concept)
+            connections = {} # key=node id connected to n, value=list of weights
+                             # (a pair place-concept may have multiple weights)
+
+            found_antonym = False
+            # Collect all edge weights for each connection
             for e in in_edges + out_edges:
+                # Antonym: this place cannot be used
+                if e[2] == 'Antonym':
+                    found_antonym=True
+                    break
                 if e[0] in concepts:  # Connection place<->concept
                     if e[0] in connections:
                         connections[e[0]].append(-e[1] if e[2] == 'Antonym' else e[1])
                     else:
                         connections[e[0]] = [-e[1] if e[2] == 'Antonym' else e[1]]
-            # Use the sum of the weights to rank places
-            related_places[n] = sum([max(v) for v in connections.values()])
+
+
+            if not found_antonym:
+                scores = [max(v) for v in connections.values()]
+                # identity relationship for places that are also concepts
+                if n in concepts:
+                    scores.append(1)
+                if len(scores)>1: # at least 2 edges
+                    related_places[n] = sum(scores)
+
         return sorted(related_places.items(), key=lambda p: -p[1])
 
     def rank_related_places(self, json_graph, antonyms=True):
-        # Given json_graph with COCO concepts, extract the place that better describes
-        # the graph. Important: some concepts may be places! (e.g. desk)
-        # For each place, for each concept score=sum(max(edge_weights(place,concept))).
-        # (A place may have multiple edges with the same concept)
-        # Rank places based on the score.
-        # :param json_graph: json graph for which you want to rank suitable places
-        # :param antonyms: True if you want to include Antonym relationships
+        """
+        Given json_graph with COCO concepts,
+        rank Conceptnet places to find those that are most representative.
+
+        The rank score encourages places that are more connected to COCO concepts in the graph.
+             score(place)=sum( [max(edge_weights(place,concept)) for all concepts] )
+        (max is necessary because there may be >1 edges between a place and a concept)
+
+        :param json_graph: json graph for which you want to rank places
+        :param antonyms: True if you want to include Antonym relationships
+                        (antonyms penalyze connection with places)
+        """
         concepts = [coco_to_concept(n['label'], self.coco_concepts_map) for n in json_graph['nodes']]
-        concept_graph = self.related_to_place(concepts, antonyms=antonyms)
+        concept_graph = self.get_related_places(concepts, antonyms=antonyms)
         rank = self.__rank_related_places(concept_graph, concepts)
         return rank
 
 def parse_loc_surface_text(text):
     """
-    Parse SurfaceText (=Conceptnet text that generates a relationship)
+    Parse SurfaceText (=Conceptnet text that generated a relationship)
     :param text: surface text
     :param subj: subject class
     :param ref: reference class

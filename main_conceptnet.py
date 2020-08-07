@@ -4,7 +4,7 @@ This file provides the code for extracting relevant subsets from ConceptNet data
 """
 import os
 import json
-from config import conceptnet_full_csv_path, conceptnet_dir, places_json_pathgiu, \
+from config import conceptnet_full_csv_path, conceptnet_dir, places_json_path, \
     conceptnet_coco_places_csv_path
 from panopticapi.utils import load_panoptic_category_info
 from pyspark import SparkContext, SQLContext
@@ -42,8 +42,8 @@ def filter_set(fields, concepts_set):
 class RUN_CONFIG:
     filter_COCO = False         # Retrieve from conceptnet only triplets that contain COCO categories
     filter_place = False        # Retrieve from conceptnet only triplets that contain the substring "place"
-    create_places_list = False  # Create "places" list, by analyzing "conceptnet_places.csv"
-    filter_COCO_and_places = False   # Retrieve from conceptnet only triplets that contain places or COCO concepts
+    create_places_list = True  # Create "places" list, by analyzing "conceptnet_places.csv"
+    filter_COCO_and_places = True   # Retrieve from conceptnet only triplets that contain places or COCO concepts
     associate_to_freq_graphs = True # Associate frequent graphs to conceptnet
 
 if __name__ == '__main__':

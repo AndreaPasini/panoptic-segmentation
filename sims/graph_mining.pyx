@@ -182,28 +182,6 @@ def analyze_graphs(simsConf):
                 "Std. nodes": round(np.std(std_nodes),2)}
     return res_dict
 
-def load_and_print_fgraphs(simsConf, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
-    """
-    Load SGS frequent graphs and print to files
-    :param simsConf: experimental configuration class
-    :param subsample: subsample graphs if >500
-    :param pdfformat: True to print pdf, False to print png
-    :param alternate_colors: True if you want to alternate different colors for nodes
-    :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
-    """
-    exp_name = get_exp_name(simsConf)
-    # Read frequent graphs
-    sel_freq_graphs_path = os.path.join(simsConf.SGS_dir, exp_name + '.json')
-    with open(sel_freq_graphs_path, 'r') as f:
-        graphs = json.load(f)
-
-    out_path = os.path.join(simsConf.SGS_dir, f"charts/{exp_name}")
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-    # Print graphs
-    print_graphs(graphs, out_path, subsample, pdfformat, alternate_colors, clean_class_names)
-
-
 def print_graphs(graphs, out_path, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
     """
     Print graphs to files
@@ -234,3 +212,24 @@ def print_graphs(graphs, out_path, subsample=True, pdfformat=True, alternate_col
             fillcolors.reverse()
         with open(f"{out_path}/g{i}_s_{sup}.{format}", "wb") as f:
            f.write(g.pipe(format=format))
+
+def load_and_print_fgraphs(simsConf, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
+    """
+    Load SGS frequent graphs and print to files
+    :param simsConf: experimental configuration class
+    :param subsample: subsample graphs if >500
+    :param pdfformat: True to print pdf, False to print png
+    :param alternate_colors: True if you want to alternate different colors for nodes
+    :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
+    """
+    exp_name = get_exp_name(simsConf)
+    # Read frequent graphs
+    sel_freq_graphs_path = os.path.join(simsConf.SGS_dir, exp_name + '.json')
+    with open(sel_freq_graphs_path, 'r') as f:
+        graphs = json.load(f)
+
+    out_path = os.path.join(simsConf.SGS_dir, f"charts/{exp_name}")
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    # Print graphs
+    print_graphs(graphs, out_path, subsample, pdfformat, alternate_colors, clean_class_names)

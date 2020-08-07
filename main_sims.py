@@ -1,7 +1,6 @@
 """
 This file applies the complete Semantic Image Summarization (SImS) pipeline for a given configuration.
 """
-import os
 import pyximport
 pyximport.install(language_level=3)
 

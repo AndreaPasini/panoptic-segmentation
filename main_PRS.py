@@ -1,10 +1,9 @@
 """
 Author: Andrea Pasini
-This file provides the code for
+This file provides the code for running the following experiments:
 - Building scene graphs (with object positions) for COCO (train, val and panoptic predictions)
 - Generating the PRS (Pairwise Relationship Summary) from training graphs (histograms and triplets)
 """
-import os
 import pyximport
 
 from sims.sims_config import SImS_config
@@ -12,10 +11,7 @@ from sims.scene_graphs.vgenome import create_scene_graphs_vg
 
 pyximport.install(language_level=3)
 from datetime import datetime
-from config import position_classifier_path, COCO_train_json_path, \
-    COCO_ann_train_dir, COCO_train_graphs_json_path, COCO_PRS_json_path, position_dataset_res_dir, \
-    COCO_panoptic_val_graphs_json_path, out_panoptic_dir, out_panoptic_json_path, VG_train_graphs_json_path, \
-    VG_train_json_path, VG_PRS_json_path, COCO_PRS_dir, VG_PRS_dir
+from config import position_classifier_path, COCO_panoptic_val_graphs_json_path, out_panoptic_dir, out_panoptic_json_path
 from sims.scene_graphs.position_classifier import validate_classifiers_grid_search, build_final_model, create_scene_graphs
 from sims.prs import create_PRS
 

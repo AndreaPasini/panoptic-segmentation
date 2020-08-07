@@ -1,36 +1,26 @@
 """
 Author: Andrea Pasini
-This file provides the code for TODO
+This file provides the code for running the following experiments:
+- Compute the Scene Graph Summary with graph mining and different configurations
+- Visualize frequent scene graphs in the SGS
+- Analyze SGS statistics
 """
 from datetime import datetime
 import pyximport
 pyximport.install(language_level=3)
-
 from scipy.stats import entropy
-
-from config import COCO_SGS_dir, COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, COCO_PRS_dir, \
+from config import COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, COCO_PRS_dir, \
     COCO_PRS_json_path
 from sims.sims_config import SImS_config
 from sims.prs import filter_PRS_histograms
-
 pyximport.install(language_level=3)
-from sims.conceptnet.places import Conceptnet
-from sims.graph_clustering import compute_image_freqgraph_count_mat, compute_freqgraph_place_count_mat, \
-    compute_image_place_count_mat
 from sims.graph_mining import build_SGS, load_and_print_fgraphs, analyze_graphs
 import pandas as pd
-from sims.graph_utils import print_graph_picture
-from sims.graph_utils import json_to_nx
 import json
-
-import os
 import sys
 
 
-
-
 def filter_COCO_paper_experiment():
-
     with open(COCO_PRS_json_path, 'r') as f:
         kb = json.load(f)
 
@@ -67,10 +57,6 @@ def main():
         compute_SGS = False          # Compute the Scene Graph Summary
         analyze_SGS = False          # Plot table with statistics for the different mining methods
         print_SGS_graphs = False    # Plot SGS scene graphs
-        compute_image_freqgraph_count_mat = False   # Associate training COCO images to frequent graphs (7 minutes)
-        compute_freqgraph_place_count_mat = False   # Associate frequent graphs to places
-        compute_image_place_count_mat = False       # Associate training COCO images to places
-        associate_to_freq_graphs = False
 
         # Experiment configuration
         experiment = 6 # Index of the experiment configuration to be run (if not specified as command-line argument)
@@ -115,12 +101,6 @@ def main():
         end_time = datetime.now()
         print('Duration: ' + str(end_time - start_time))
 
-
-
-
-
-
-
     if RUN_CONFIG.analyze_SGS:
         if RUN_CONFIG.dataset=='COCO':
             exp_list = [11, 1, 6, 8, 4, 9]    # Selected experiments for analyzing statistics
@@ -142,61 +122,12 @@ def main():
     if RUN_CONFIG.print_SGS_graphs:
         print(f"Selected experiment: {experiment}")
         # Print graphs to file
-
         # For the 4 article images (issues of graph mining), exp=11
         #load_and_print_fgraphs(config, subsample = [154, 155, 784, 786])
         # For the 2 examples on node pruning
         #load_and_print_fgraphs(config, subsample=[1175])
-
         # load_and_print_fgraphs(config, subsample=list(range(1100, 1190)))
         load_and_print_fgraphs(config)
-
-
-    if RUN_CONFIG.compute_image_freqgraph_count_mat:
-        print(f"Selected experiment: {experiments[selected_experiment]}")
-        start_time = datetime.now()
-        compute_image_freqgraph_count_mat(experiment)
-        end_time = datetime.now()
-        print('Duration: ' + str(end_time - start_time))
-    if RUN_CONFIG.compute_freqgraph_place_count_mat:
-        print(f"Selected experiment: {experiments[selected_experiment]}")
-        start_time = datetime.now()
-        compute_freqgraph_place_count_mat(experiment)
-        end_time = datetime.now()
-        print('Duration: ' + str(end_time - start_time))
-
-    if RUN_CONFIG.compute_image_place_count_mat:
-        print(f"Selected experiment: {experiments[selected_experiment]}")
-        start_time = datetime.now()
-        compute_image_place_count_mat()
-        end_time = datetime.now()
-        print('Duration: ' + str(end_time - start_time))
-
-
-
-
-
-
-
-
-    if RUN_CONFIG.associate_to_freq_graphs:
-        with open(os.path.join(COCO_SGS_dir, 'train_freqGraph_kbfilter_prune_gspan_005.json')) as f:
-            freq_graphs = json.load(f)
-        conceptnet = Conceptnet()
-
-        def associate_graph(g, i):
-            rank = conceptnet.rank_related_places(g['g'])
-            if len(rank) > 0:
-                print_graph_picture(f"{COCO_SGS_dir}/clusters/{rank[0][0]}_{i}.png", json_to_nx(g['g']))
-
-        for i, g in enumerate(freq_graphs):
-            associate_graph(g, i)
-
-
-
-    ################################## TODO: random walk multiple sullo stesso grafo, poi fare sequence mining #############################
-
-
 
 if __name__ == '__main__':
     main()
