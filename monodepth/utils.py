@@ -51,6 +51,9 @@ def sec_to_hm_str(t):
 def download_model_if_doesnt_exist(model_name):
     """If pretrained kitti model doesn't exist, download and unzip it
     """
+
+    model_dir = './monodepth/models'
+
     # values are tuples of (<google cloud URL>, <md5 checksum>)
     download_paths = {
         "mono_640x192":
@@ -82,10 +85,10 @@ def download_model_if_doesnt_exist(model_name):
              "cdc5fc9b23513c07d5b19235d9ef08f7"),
         }
 
-    if not os.path.exists("models"):
-        os.makedirs("models")
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
 
-    model_path = os.path.join("models", model_name)
+    model_path = os.path.join(model_dir, model_name)
 
     def check_file_matches_md5(checksum, fpath):
         if not os.path.exists(fpath):
