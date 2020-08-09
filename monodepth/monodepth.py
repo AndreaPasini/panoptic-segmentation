@@ -8,15 +8,17 @@ from monodepth import networks
 from monodepth.utils import download_model_if_doesnt_exist
 
 class Monodepth:
+    model_dir = './monodepth/models'
+
     def __init__(self):
         """
         Initialize the depth prediction model.
         """
         model_name = "mono_640x192"
 
-        download_model_if_doesnt_exist(model_name)
-        encoder_path = os.path.join("models", model_name, "encoder.pth")
-        depth_decoder_path = os.path.join("models", model_name, "depth.pth")
+        download_model_if_doesnt_exist(self.model_dir, model_name)
+        encoder_path = os.path.join(self.model_dir, model_name, "encoder.pth")
+        depth_decoder_path = os.path.join(self.model_dir, model_name, "depth.pth")
 
         # LOADING PRETRAINED MODEL
         self.encoder = networks.ResnetEncoder(18, False)

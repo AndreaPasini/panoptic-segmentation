@@ -48,11 +48,9 @@ def sec_to_hm_str(t):
     return "{:02d}h{:02d}m{:02d}s".format(h, m, s)
 
 
-def download_model_if_doesnt_exist(model_name):
+def download_model_if_doesnt_exist(model_dir, model_name):
     """If pretrained kitti model doesn't exist, download and unzip it
     """
-
-    model_dir = './monodepth/models'
 
     # values are tuples of (<google cloud URL>, <md5 checksum>)
     download_paths = {
