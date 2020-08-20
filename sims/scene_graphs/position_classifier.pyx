@@ -202,18 +202,15 @@ def image2scene_graph(image_name, image_id, segments_info, cat_info, annot_folde
         g.add_edge(s, r, pos=prediction)
     return g
 
-def create_scene_graphs(fileModel_path, COCO_json_path, COCO_ann_dir, out_graphs_json_path):
+def get_COCO_ann_dictionaries(COCO_json_path):
     """
-    ** Applicable to data with COCO dataset format. **
-    Generate scene graphs from images, applying the relative position classifier
-    :param fileModel_path: path to relative position model
-    :param COCO_json_path: annotation file with classes for each segment (either CNN annotations or ground-truth)
-    :param COCO_ann_dir: folder with png annotations (either CNN annotations or ground-truth)
-    :param out_graphs_json_path: output json file with scene graphs
+    Retrieve COCO annotations
+    :param COCO_json_path:
+    :return: tuple with dictionaries = (image file name:image id,
+                                        image file name:segments annotation,
+                                        coco category id:category information
+                                        )
     """
-
-    loaded_model = pickle.load(open(fileModel_path, 'rb'))
-
     # Load annotations
     with open(COCO_json_path, 'r') as f:
         json_data = json.load(f)
@@ -230,7 +227,21 @@ def create_scene_graphs(fileModel_path, COCO_json_path, COCO_ann_dir, out_graphs
             with open(COCO_panoptic_cat_info_path, 'r') as f:
                 categories_list = json.load(f)
             cat_dict = {el['id']: el for el in categories_list}
+    return id_dict, annot_dict, cat_dict
 
+def create_scene_graphs(fileModel_path, COCO_json_path, COCO_ann_dir, out_graphs_json_path):
+    """
+    ** Applicable to data with COCO dataset format. **
+    Generate scene graphs from images, applying the relative position classifier
+    :param fileModel_path: path to relative position model
+    :param COCO_json_path: annotation file with classes for each segment (either CNN annotations or ground-truth)
+    :param COCO_ann_dir: folder with png annotations (either CNN annotations or ground-truth)
+    :param out_graphs_json_path: output json file with scene graphs
+    """
+
+    loaded_model = pickle.load(open(fileModel_path, 'rb'))
+
+    id_dict, annot_dict, cat_dict = get_COCO_ann_dictionaries(COCO_json_path)
 
     # Get files to be analyzed
     files = sorted(listdir(COCO_ann_dir))

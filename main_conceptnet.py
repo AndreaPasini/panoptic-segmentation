@@ -42,9 +42,8 @@ def filter_set(fields, concepts_set):
 class RUN_CONFIG:
     filter_COCO = False         # Retrieve from conceptnet only triplets that contain COCO categories
     filter_place = False        # Retrieve from conceptnet only triplets that contain the substring "place"
-    create_places_list = True  # Create "places" list, by analyzing "conceptnet_places.csv"
+    create_places_list = False  # Create "places" list, by analyzing "conceptnet_places.csv"
     filter_COCO_and_places = True   # Retrieve from conceptnet only triplets that contain places or COCO concepts
-    associate_to_freq_graphs = True # Associate frequent graphs to conceptnet
 
 if __name__ == '__main__':
 

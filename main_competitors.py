@@ -104,37 +104,67 @@ def compute_BOW_descriptors():
     end_time = datetime.now()
     print('Duration: ' + str(end_time - start_time))
 
-if __name__ == "__main__":
-    out_file = "centroids2.txt"
-
-    # Feature extraction for each image
-    #compute_BOW_descriptors()
-
+def read_BOW_images(COCO_subset=True):
+    """
+    Read features generated with compute_BOW_descriptors()
+    :param COCO_subset True if you want features only for COCO subset (experiments in SImS white paper)
+    :return: pandas matrix with row=image, column=bow features
+    """
     # Cluster images with kmedoids
     X = pd.read_csv(os.path.join(competitors_dir, "bow_images.pd"), index_col=0)
+    if COCO_subset:
+        # Select experiment images
+        with open(COCO_train_graphs_subset_json_path) as f:
+            graphs = json.load(f)
+        selected_names = [f"{g['graph']['name']:012d}.jpg" for g in graphs]
+        X = X.loc[selected_names]
+    return X
 
-    # Select interesting images
-    with open(COCO_train_graphs_subset_json_path) as f:
-        graphs = json.load(f)
-    selected_names = [f"{g['graph']['name']:012d}.jpg" for g in graphs]
-    X = X.loc[selected_names]
-
-    K = 9
-    km = kmedoids(X.to_numpy(), np.random.randint(0,len(X), K))
+def kmedoids_summary(X, k):
+    """
+    Apply k-medoids to the feature vector X containin images to be summarized
+    :param k: number of clusters
+    :return: list of image names for the selected medoids
+    """
+    X = X[:1000]
+    km = kmedoids(X.to_numpy(), np.random.randint(0,len(X), k))
     start_time = datetime.now()
     print("Start clustering process.")
     km.process()
     med = km.get_medoids()
     end_time = datetime.now()
     print('Done. Duration: ' + str(end_time - start_time))
-
     images = []
     for m in med:
         img = X.iloc[m].name
         images.append(img)
-    print(images)
+    return images, end_time - start_time
 
-    with open(os.path.join(competitors_dir, out_file),'w') as f:
-        for el in images:
-            f.write(el+",")
-    print(len(X))
+
+
+if __name__ == "__main__":
+    class RUN_CONFIG:
+        compute_BOW_descriptors = False # Map each image to its BOW descriptors
+        run_k_medoids = True
+    out_file = "centroids2.txt"
+
+    # Feature extraction for each image in COCO training set
+    if RUN_CONFIG.compute_BOW_descriptors:
+        compute_BOW_descriptors()
+    # KMedoids summary for different k values
+    if RUN_CONFIG.run_k_medoids:
+        X = read_BOW_images()
+        res = {}
+        avg_time = 0
+        for k in range(4,21):
+            medoids, duration = kmedoids_summary(X, k)
+            res[k] = (medoids, duration.seconds)
+            avg_time += duration.seconds
+            print(f"{k}: {medoids}")
+            with open(os.path.join(competitors_dir, "log.txt"),'a+') as f:
+                f.write(f"{k}: {medoids}\n")
+        print(str(avg_time/len(res)))
+        with open(os.path.join(competitors_dir, "avgTime.txt"), 'w') as f:
+            f.write(str(avg_time/len(res)))
+        with open(os.path.join(competitors_dir, "centroids.json"),'w') as f:
+            json.dump(res, f)

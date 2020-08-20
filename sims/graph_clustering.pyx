@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 
@@ -11,18 +12,70 @@ from sims.conceptnet.places import Conceptnet
 from sims.graph_mining import prepare_graphs_with_PRS, get_exp_name, read_freqgraphs
 from sims.graph_utils import json_to_nx
 
-def subgraph_isomorphism(subgraph, graph):
+import graph_tools as gt
+from graph_tool.all import subgraph_isomorphism as gt_subgraph_isomorphism
+
+
+# def subgraph_isomorphism(subgraph, graph):
+#     """
+#     Check whether subgraph is a subgraph of graph (subgraph-isomorphism)
+#     :param subgraph: json_graph considered as sub-graph
+#     :param graph: json_graph considered as graph
+#     :return: list of dictionaries, one for each match. Each dictinary maps graphNodeId:subgraphNodeId
+#     """
+#     nmatch = categorical_node_match('label','')
+#     ematch = categorical_edge_match('pos','')
+#     matcher = DiGraphMatcher(json_to_nx(graph), json_to_nx(subgraph),
+#                              node_match=nmatch, edge_match=ematch)
+#     return list(matcher.subgraph_isomorphisms_iter())
+
+def subgraph_isomorphism(subgraph, graph, induced=False):
     """
     Check whether subgraph is a subgraph of graph (subgraph-isomorphism)
     :param subgraph: json_graph considered as sub-graph
     :param graph: json_graph considered as graph
-    :return: list of dictionaries, one for each match. Each dictinary maps graphNodeId:subgraphNodeId
+    :return: list of dictionaries, one for each match. Each dictionary maps graphNodeId:subgraphNodeId
     """
-    nmatch = categorical_node_match('label','')
-    ematch = categorical_edge_match('pos','')
-    matcher = DiGraphMatcher(json_to_nx(graph), json_to_nx(subgraph),
-                             node_match=nmatch, edge_match=ematch)
-    return list(matcher.subgraph_isomorphisms_iter())
+
+    g_nodes = {n['label'] for n in graph['nodes']}
+    s_nodes = {n['label'] for n in subgraph['nodes']}
+    if not induced:
+        g_nodes_map = {n['id'] : n['label'] for n in graph['nodes']}
+        s_nodes_map = {n['id'] : n['label'] for n in subgraph['nodes']}
+
+    if len(s_nodes - g_nodes) == 0:
+        if not induced:
+            # Copy the old graph (shallow copy)
+            graph = copy.copy(graph)
+
+            # NetworkX search for induced subgraphs.
+            # These operations aim at reducing noise edges and simulates a non-induced isomorphism
+            # 1. find useless connections
+            # Connections of the subgraph
+            good_edges = {(s_nodes_map[e['s']], e['pos'], s_nodes_map[e['r']]) for e in subgraph['links']}
+            # Remove connections of graph if not contained in the subgraph
+            pruned_edges = []
+            for e in graph['links']:
+                e_str = (g_nodes_map[e['s']], e['pos'], g_nodes_map[e['r']])
+                if e_str in good_edges:
+                    pruned_edges.append(e)
+            graph['links'] = pruned_edges
+
+            # 2. remove useless nodes (with label not included in subgraph)
+            useless = g_nodes - s_nodes
+            pruned_nodes = []
+            for n in graph['nodes']:
+                if n['label'] not in useless:
+                    pruned_nodes.append(n)
+            graph['nodes']=pruned_nodes
+
+        nmatch = categorical_node_match('label','')
+        ematch = categorical_edge_match('pos','')
+        matcher = DiGraphMatcher(json_to_nx(graph), json_to_nx(subgraph),
+                                 node_match=nmatch, edge_match=ematch)
+        return list(matcher.subgraph_isomorphisms_iter())
+    else:
+        return []
 
 def get_isomorphism_count_vect(graph, freq_graphs):
     """
@@ -42,7 +95,7 @@ def get_isomorphism_count_vect(graph, freq_graphs):
             cvector[i] += len(match_list)
     return cvector
 
-def compute_image_freqgraph_count_mat(experiment):
+def compute_image_freqgraph_count_mat(experiment, output_file):
     """
     Given a graph mining experiment configuration, associate training COCO images to frequent graphs.
     Result is a count matrix saved to a csv file (1 row for each image, 1 column for each freq graph)
@@ -60,7 +113,7 @@ def compute_image_freqgraph_count_mat(experiment):
         pbar.update()
     pbar.close()
     cmatrix = pd.DataFrame(cmatrix)
-    cmatrix.to_csv(trainimage_freqgraph_csv_path, sep=",", index=False)
+    cmatrix.to_csv(output_file, sep=",", index=False)
 
 def compute_freqgraph_place_count_mat(experiment):
     """

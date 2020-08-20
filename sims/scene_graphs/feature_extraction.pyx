@@ -8,7 +8,7 @@ import numpy as np
 def image2strings(img_ann):
     """
     Transform image annotation to vertical string representation
-    example: aaaaabbbcc -> [(a,5),(b,3),(c,2)]
+    example: aaaaabbbcc -> ([a,b,c], [5,3,2])
 
     ----
     :param img_ann: image png annotation (numpy matrix)
@@ -27,6 +27,37 @@ def image2strings(img_ann):
             ids.append(k)
             counts.append(sum(1 for _ in g))
         strings.append((ids, counts))
+    return strings
+
+def image2strings_RPCD(img_ann, img_depth):
+    """
+    Transform image annotation to vertical string representation
+    example: aaaaabbbcc -> ([a,b,c],[(5,0.1,0.1),(3,0.3,0.31),(2,0.4,0.39)])
+    (object id, [(n.consecutive pixels, start depth, stop depth)])
+    ----
+    :param img_ann: image png annotation (numpy matrix)
+    :return: list of tuples with string representation
+    """
+
+    # Trannspose matrix:
+    img_ann = np.transpose(img_ann)
+    img_depth = np.transpose(img_depth/255)
+    strings = []
+    # For each column of the image (=rows in the transposed image)
+    strings = []
+    for img_col, depth_col in zip(img_ann, img_depth):
+        ids = []
+        data = []
+        for k, g in groupby(zip(img_col, depth_col), key=lambda x: x[0]):
+            segment = np.array([el[1] for el in g])
+            l = segment.size
+            start = segment[0:int(0.1*l)]
+            end = segment[-int(0.1 * l):]
+            start_avg = start.mean()
+            end_avg = end.mean()
+            ids.append(k)
+            data.append((l, start_avg, end_avg))
+        strings.append((ids, data))
     return strings
 
 def compute_string_positions(strings, object_ordering=None):

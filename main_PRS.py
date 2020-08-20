@@ -6,12 +6,14 @@ This file provides the code for running the following experiments:
 """
 import pyximport
 
+from sims.scene_graphs.depth import create_scene_graphs_RPCD
 from sims.sims_config import SImS_config
 from sims.scene_graphs.vgenome import create_scene_graphs_vg
 
 pyximport.install(language_level=3)
 from datetime import datetime
-from config import position_classifier_path, COCO_panoptic_val_graphs_json_path, out_panoptic_dir, out_panoptic_json_path
+from config import position_classifier_path, COCO_panoptic_val_graphs_json_path, out_panoptic_dir, \
+    out_panoptic_json_path, out_depth_train_dir
 from sims.scene_graphs.position_classifier import validate_classifiers_grid_search, build_final_model, create_scene_graphs
 from sims.prs import create_PRS
 
@@ -22,6 +24,7 @@ from sims.prs import create_PRS
 class RUN_CONFIG:
     generate_train_graphs = False   # COCO, Build graphs (object positions) for training images (118,287, may take some hours)
                                     # VisualGenome, build training graphs from annotations
+    generate_train_graphs_depth = True # COCO, Build scene graphs, using depth information
     generate_val_graphs = False     # Build graphs (object positions) for CNN predictions on validation set  (5,000)
     generate_PRS = False            # Generate the PRS from training graphs: save graphs and histograms
 
@@ -41,6 +44,8 @@ if __name__ == "__main__":
             create_scene_graphs(position_classifier_path, config.ann_json_path, config.ann_dir, config.scene_graphs_json_path)
         elif RUN_CONFIG.dataset == 'VG':
             create_scene_graphs_vg(config.ann_json_path, config.scene_graphs_json_path)
+    elif RUN_CONFIG.generate_train_graphs_depth:
+        create_scene_graphs_RPCD(position_classifier_path, config.ann_json_path, config.ann_dir, out_depth_train_dir,config.scene_graphs_json_path)
     elif RUN_CONFIG.generate_val_graphs and RUN_CONFIG.dataset=='COCO':
         # Create scene graphs from CNN predictions (panoptic segmentation)
         create_scene_graphs(position_classifier_path, out_panoptic_json_path, out_panoptic_dir, COCO_panoptic_val_graphs_json_path)

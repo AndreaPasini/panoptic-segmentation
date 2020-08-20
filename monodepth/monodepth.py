@@ -7,6 +7,11 @@ from torchvision import transforms
 from monodepth import networks
 from monodepth.utils import download_model_if_doesnt_exist
 
+"""
+Depth prediction from 2D mono images.
+Repository: https://github.com/nianticlabs/monodepth2
+"""
+
 class Monodepth:
     model_dir = './monodepth/models'
 
