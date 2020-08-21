@@ -126,7 +126,6 @@ def kmedoids_summary(X, k):
     :param k: number of clusters
     :return: list of image names for the selected medoids
     """
-    X=X[:40]
     km = kmedoids(X.to_numpy(), np.random.randint(0,len(X), k))
     start_time = datetime.now()
     print("Start clustering process.")
