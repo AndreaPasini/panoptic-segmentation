@@ -10,6 +10,9 @@ COCO_ann_train_dir = os.path.join(COCO_dir, 'annotations/panoptic_train2017/')
 COCO_train_json_path = os.path.join(COCO_dir, 'annotations/panoptic_train2017.json')
 COCO_panoptic_cat_info_path = './classes/panoptic_coco_categories.json'
 COCO_panoptic_cat_list_path = './classes/panoptic.csv'
+COCO_train2014_captions_json_path = os.path.join(COCO_dir, 'annotations/captions_train2014.json')
+COCO_val2014_captions_json_path = os.path.join(COCO_dir, 'annotations/captions_val2014.json')
+
 # Visual Genome (subset)
 VG_dir = '../VGenome'
 VG_train_json_path = os.path.join(VG_dir, 'annotations_train.json')
@@ -44,6 +47,8 @@ Scene graphs extracted from COCO and VG
 COCO_train_graphs_json_path = os.path.join(position_dataset_res_dir, 'train_graphs.json')
 # Subset of scene graphs for Paper experiments
 COCO_train_graphs_subset_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset.json')
+# Subset2 of scene graphs for Paper experiments
+COCO_train_graphs_subset2_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset2.json')
 # Scene graphs of predictions (Deeplab + Matterport rcnn) in COCO val
 COCO_panoptic_val_graphs_json_path = os.path.join(position_dataset_res_dir, 'panopt_val_graphs.json')
 # Scene graphs of VG train
@@ -62,6 +67,7 @@ SGS (Scene Graph Summary) generation, with graph mining
 """
 COCO_SGS_dir = os.path.join(COCO_dir, 'SGS')
 VG_SGS_dir = os.path.join(VG_dir, 'SGS')
+
 """
 Conceptnet
 """
@@ -75,7 +81,6 @@ panoptic_concepts_csv_path = './classes/panoptic_conceptnet.csv'
 Graph clustering
 """
 graph_clustering_dir = os.path.join(COCO_dir, 'gclustering/')
-trainimage_freqgraph_csv_path = os.path.join(graph_clustering_dir,"trainimage_freqgraph.csv")   # Count matrix images->freq graphs
 freqgraph_place_csv_path = os.path.join(graph_clustering_dir,"freqgraph_place.csv")  # Count matrix freq graphs -> conceptnet places
 trainimage_place_csv_path = os.path.join(graph_clustering_dir,"trainimage_place.csv")  # Count matrix train image -> conceptnet places
 

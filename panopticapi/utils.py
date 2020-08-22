@@ -9,7 +9,8 @@ import numpy as np
 from PIL import Image
 
 # The decorator is used to prints an error trhown inside process
-from config import COCO_panoptic_cat_info_path, COCO_panoptic_cat_list_path
+from config import COCO_panoptic_cat_info_path, COCO_panoptic_cat_list_path, COCO_train_json_path, COCO_val_json_path, \
+    COCO_train2014_captions_json_path, COCO_val2014_captions_json_path
 
 
 def get_traceback(f):
@@ -130,3 +131,33 @@ def load_panoptic_categ_list():
             id, label = line.rstrip('\n').split(":")
             panoptic_classes[int(id)] = label
     return panoptic_classes
+
+
+def read_train_img_captions(split='train'):
+    """
+    Read COCO captions
+    :param split 'train' or 'val' to indicate COCO train2017 or val2017
+    :return map {imgId:[list of captions]}
+    """
+    with open(COCO_train2014_captions_json_path) as f:
+        annotations_train = json.load(f)
+    with open(COCO_val2014_captions_json_path) as f:
+        annotations_val = json.load(f)
+    if split == 'train':
+        with open(COCO_train_json_path) as f:
+            split_images = json.load(f)
+    elif split == 'val':
+        with open(COCO_val_json_path) as f:
+            split_images = json.load(f)
+    else:
+        return None
+
+    split_images_ids = {ann['image_id'] for ann in split_images['annotations']}
+    img_captions = {}
+    for ann in annotations_train['annotations'] + annotations_val['annotations']:
+        if ann['image_id'] in split_images_ids:
+            if ann['image_id'] in img_captions:
+                img_captions[ann['image_id']].append(ann['caption'])
+            else:
+                img_captions[ann['image_id']] = [ann['caption']]
+    return img_captions

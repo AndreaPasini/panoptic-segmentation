@@ -13,7 +13,7 @@ from sims.graph_utils import json_to_nx, print_graph_picture
 
 
 
-from sims.graph_mining import read_freqgraphs, print_graphs, load_and_print_fgraphs, prepare_graphs_with_PRS
+from sims.sgs import read_freqgraphs, print_graphs, load_and_print_fgraphs, prepare_graphs_with_PRS
 from sims.sims_config import SImS_config
 import pandas as pd
 import numpy as np
@@ -133,7 +133,6 @@ if __name__ == "__main__":
     class RUN_CONFIG:
         print_maximal = False # Print maximal-itemset graphs
         associate_places = False
-        compute_image_freqgraph_count_mat = True  # Associate training COCO images to frequent graphs (7 minutes)
         compute_freqgraph_place_count_mat = False  # Associate frequent graphs to places
         compute_image_place_count_mat = False  # Associate training COCO images to places
         associate_to_freq_graphs = False
@@ -169,12 +168,7 @@ if __name__ == "__main__":
                 print_graph_picture(f"{config.SGS_dir}/charts/places/g_{i}.png",
                                     json_to_nx(g['g']))
 
-    if RUN_CONFIG.compute_image_freqgraph_count_mat:
-        # Check subgraph isomorphism of each frequent graph with COCO training images
-        start_time = datetime.now()
-        compute_image_freqgraph_count_mat(config, trainimage_freqgraph_csv_path)
-        end_time = datetime.now()
-        print('Duration: ' + str(end_time - start_time))
+
 
 
     # if RUN_CONFIG.associate_to_freq_graphs:

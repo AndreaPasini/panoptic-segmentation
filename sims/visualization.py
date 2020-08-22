@@ -1,6 +1,7 @@
 import os
 
 from config import COCO_ann_val_dir, COCO_img_val_dir, COCO_ann_train_dir, COCO_img_train_dir
+from sims.graph_utils import json_to_graphviz
 from sims.scene_graphs.image_processing import mask_baricenter, getImageName
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
@@ -174,3 +175,42 @@ def filter_graphs_with_local_data(graphs, is_train=True):
         if os.path.exists(img_file):
             filtered_graphs.append(g)
     return filtered_graphs
+
+
+def print_graphs(graphs, out_path, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
+    """
+    Print graphs to files
+    :param graphs: list of graphs to be displayed or None if simsConf is specified
+    :param out_path: existing output folder
+    :param subsample: subsample graphs if >500
+    :param pdfformat: True to print pdf, False to print png
+    :param alternate_colors: True if you want to alternate different colors for nodes
+    :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
+    """
+    # Subsampling of graphs
+    if type(subsample) is list:
+        iter_graphs = [(i,g) for i,g in enumerate(graphs) if i in subsample]
+    elif len(graphs) > 500 and subsample==True:
+        steps = np.round(np.linspace(0,len(graphs)-1,500)).astype(np.int)
+        iter_graphs = [(i,g) for i,g in enumerate(graphs) if i in steps]
+    else:
+        iter_graphs = enumerate(graphs)
+
+    fillcolors = ["#d4eaff", "#baf0a8"]
+    format = "pdf" if pdfformat else "png"
+
+    for i, g_dict in iter_graphs:
+        if 'g' in g_dict:
+            sup = g_dict['sup']
+            #g = json_to_graphviz(node_pruning([g_dict['g']])[0], fillcolor=fillcolors[0])
+            g = json_to_graphviz(g_dict['g'], fillcolor=fillcolors[0], clean_class_names=clean_class_names)
+            if alternate_colors:
+                fillcolors.reverse()
+            with open(f"{out_path}/s_{sup}_g{i}.{format}", "wb") as f:
+               f.write(g.pipe(format=format))
+        else:
+            g = json_to_graphviz(g_dict, fillcolor=fillcolors[0], clean_class_names=clean_class_names)
+            if alternate_colors:
+                fillcolors.reverse()
+            with open(f"{out_path}/g{i}.{format}", "wb") as f:
+               f.write(g.pipe(format=format))

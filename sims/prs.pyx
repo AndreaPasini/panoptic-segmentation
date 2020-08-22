@@ -2,12 +2,11 @@
 This file contains functions related to the PRS computation and analysis:
 - create_PRS() get image training graphs and compute PRS (triplets and histograms)
 """
-
+import pyximport
+pyximport.install(language_level=3)
 import json
 import os
 from multiprocessing.pool import Pool
-import pyximport
-pyximport.install(language_level=3)
 from scipy.stats import entropy
 from tqdm import tqdm
 from sims.graph_utils import json_to_nx, nx_to_json

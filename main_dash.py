@@ -10,7 +10,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-from sims.graph_mining import read_freqgraphs
+from sims.sgs import read_freqgraphs
 
 from main_sims2 import get_maximal_itemsets
 from sims.graph_utils import json_to_graphviz

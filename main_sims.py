@@ -5,7 +5,7 @@ import pyximport
 pyximport.install(language_level=3)
 
 from sims.prs import create_PRS
-from sims.graph_mining import build_SGS
+from sims.sgs import build_SGS
 from sims.scene_graphs.position_classifier import create_scene_graphs
 from config import position_classifier_path
 from sims.scene_graphs.vgenome import create_scene_graphs_vg
