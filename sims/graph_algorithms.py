@@ -52,6 +52,12 @@ def subgraph_isomorphism(subgraph, graph, induced=False):
 
         nmatch = categorical_node_match('label','')
         ematch = categorical_edge_match('pos','')
+
+        # print(len(graph['nodes']),len(subgraph['nodes']))
+        #
+        # if (len(graph['nodes'])==15 and len(subgraph['nodes'])==6):
+        #     print("")
+
         matcher = DiGraphMatcher(json_to_nx(graph), json_to_nx(subgraph),
                                  node_match=nmatch, edge_match=ematch)
         res_list = []
@@ -98,7 +104,12 @@ def compute_coverage_mat(config):
     output_file = os.path.join(config.SGS_dir, "coverage_mat_"+experiment_name+".csv")
 
     # Read training graphs
+    config.SGS_params['edge_pruning']=True
+    config.SGS_params['node_pruning']=True
     train_graphs_filtered = prepare_graphs_with_PRS(config)
+    config.SGS_params['edge_pruning']=False
+    config.SGS_params['node_pruning']=False
+
     # Read frequent graphs
     freq_graphs = read_freqgraphs(config)
     pbar = tqdm(total=len(train_graphs_filtered))
