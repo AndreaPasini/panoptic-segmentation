@@ -21,7 +21,7 @@ def main():
     ### Choose methods to be run ###
     class RUN_CONFIG:
         #1. Select an experimental configuration
-        experiment = 8 # Index of the experiment configuration to be run (if not specified as command-line argument)
+        experiment = 3 # Index of the experiment configuration to be run (if not specified as command-line argument)
         #2. Choose a dataset
         dataset = 'COCO'
         #dataset = 'COCO_subset' # Experiment with only 4 COCO scenes (for paper comparisons)
@@ -38,7 +38,12 @@ def main():
         ########### TODO #############
         evaluate_SGS = False         # Plot table with statistics for the different SGS configurations
 
+## TT: 8, 10, 11(subdue)
+### TF: TF  3, 6(subdue)
+## FF: 0
 
+#done: 8, 11
+#Doing: 10(OK), 6, 0
 
 
     # Experiment configuration

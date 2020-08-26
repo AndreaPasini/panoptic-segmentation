@@ -54,7 +54,16 @@ def subgraph_isomorphism(subgraph, graph, induced=False):
         ematch = categorical_edge_match('pos','')
         matcher = DiGraphMatcher(json_to_nx(graph), json_to_nx(subgraph),
                                  node_match=nmatch, edge_match=ematch)
-        return list(matcher.subgraph_isomorphisms_iter())
+        res_list = []
+        i = 0
+        # Necessary because sometimes crashes (too many matches)
+        for res in matcher.subgraph_isomorphisms_iter():
+            res_list.append(res)
+            if i>=0:
+                break
+            i+=1
+
+        return res_list
     else:
         return []
 
