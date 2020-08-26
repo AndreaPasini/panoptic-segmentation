@@ -21,16 +21,16 @@ def main():
     ### Choose methods to be run ###
     class RUN_CONFIG:
         #1. Select an experimental configuration
-        experiment = 12 # Index of the experiment configuration to be run (if not specified as command-line argument)
+        experiment = 8 # Index of the experiment configuration to be run (if not specified as command-line argument)
         #2. Choose a dataset
-        #dataset = 'COCO'
+        dataset = 'COCO'
         #dataset = 'COCO_subset' # Experiment with only 4 COCO scenes (for paper comparisons)
-        dataset = 'COCO_subset2' # Experiment with images selected by COCO caption
+        #dataset = 'COCO_subset2' # Experiment with images selected by COCO caption
         # dataset = 'VG'
 
         #3. Run one of the following options
         compute_SGS = False           # Compute the Scene Graph Summary
-        compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes)
+        compute_coverage_mat = True  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
         print_SGS_graphs = False      # Plot SGS scene graphs
 
 
@@ -122,6 +122,10 @@ def main():
 
 
     if RUN_CONFIG.evaluate_SGS:
+
+        ####!!!!!! TODO: calcolare la coverage !!!!!!!
+        # Important: at least "2 nodes" to be considered.!!!!!!!!!!!1
+
         if RUN_CONFIG.dataset=='COCO':
             exp_list = [11, 1, 6, 8, 4, 9]    # Selected experiments for analyzing statistics
         else:

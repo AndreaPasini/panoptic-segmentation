@@ -1,5 +1,8 @@
 import cv2
 import os
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+
 from config import COCO_img_train_dir, COCO_train_graphs_subset_json_path, COCO_SGS_dir, COCO_train_graphs_json_path, \
     COCO_train_graphs_subset2_json_path
 import numpy as np
@@ -9,7 +12,7 @@ import pandas as pd
 from datetime import datetime
 import json
 from pyclustering.cluster.kmedoids import kmedoids
-
+from tqdm import tqdm
 from sims.graph_algorithms import get_isomorphism_count_vect
 from sims.sims_config import SImS_config
 from sims.visualization import print_graphs
@@ -178,18 +181,26 @@ def compute_coverage(summary, collection):
     :return:
     """
     summary = [{'g':s} for s in summary]
+
+    pbar = tqdm(total=len(collection))
+    cmatrix = []
     for g in collection:
         vect = get_isomorphism_count_vect(g, summary)
-        print(vect.sum())
+        cmatrix.append(vect)
+        pbar.update()
+    cmatrix = pd.DataFrame(cmatrix)
+    pbar.close()
+    return cmatrix
 
 if __name__ == "__main__":
     class RUN_CONFIG:
         compute_BOW_descriptors = False # Map each COCO image to its BOW descriptors
-        run_kmedoids = True            # Run KMedoids summary for different k values
+        run_kmedoids = False            # Run KMedoids summary for different k values
         print_kmedoids_graphs = False     # Print scene graphs of selected kmedoids images (for each k)
-        compute_kmedoids_coverage = False # Compute graph coverage for kmedoids
+        compute_kmedoids_coverage_matrix = False # Compute graph coverage matrix for kmedoids
+        compute_coverage = True  # Use coverage matrix to compute graph coverage
 
-        dataset = 'COCO_subset2'     # Choose dataset
+        dataset = 'COCO_subset'     # Choose dataset
         #dataset = 'COCO_subset2'
         if dataset == 'COCO_subset':
             mink = 4                        # Min value of k to test kmedoids
@@ -229,7 +240,7 @@ if __name__ == "__main__":
             json.dump(res, f)
     # Print graphs associated to kmedoids
     if RUN_CONFIG.print_kmedoids_graphs:
-        config = SImS_config('COCO_subset')
+        config = SImS_config(RUN_CONFIG.dataset)
         with open(kmedoids_out_clusters_path) as f:
             kmedoids_result = json.load(f)
         with open(config.scene_graphs_json_path, 'r') as f:
@@ -240,17 +251,40 @@ if __name__ == "__main__":
             out_graphs_dir = os.path.join(output_path,'kmedoids_graphs',f'k{k}')
             if not os.path.exists(out_graphs_dir):
                 os.makedirs(out_graphs_dir)
-            print_graphs(graphs, os.path.join(competitors_dir,f'k{k}'))
+            print_graphs(graphs, out_graphs_dir)
 
     # Compute graph coverage for kmedoids
-    if RUN_CONFIG.compute_kmedoids_coverage:
-        config = SImS_config('COCO_subset')
+    if RUN_CONFIG.compute_kmedoids_coverage_matrix:
+        config = SImS_config(RUN_CONFIG.dataset)
         with open(kmedoids_out_clusters_path) as f:
             kmedoids_result = json.load(f)
         with open(config.scene_graphs_json_path, 'r') as f:
             coco_graphs = json.load(f)
         kmedoids_graphs = get_kmedoids_graphs(kmedoids_result, coco_graphs)
 
-
+        cmatrices_list = []
         for k, summary_graphs_i in kmedoids_graphs.items():
-            compute_coverage(coco_graphs, summary_graphs_i)
+            cmatrix = compute_coverage(summary_graphs_i, coco_graphs)
+            cmatrix['k'] = k
+            #cmatrix.insert(0, 'k', k)
+            cmatrices_list.append(cmatrix)
+        cmatrices = pd.concat(cmatrices_list, sort=True)
+        cmatrices.set_index('k', inplace=True)
+        cmatrices.index.name = 'k'
+        output_file = os.path.join(output_path, "coverage_mat.csv")
+        cmatrices.to_csv(output_file, sep=",")
+
+    if RUN_CONFIG.compute_coverage:
+        cmatrices = pd.read_csv(os.path.join(output_path, "coverage_mat.csv"), index_col='k')
+        coverage_k = []
+        for k in range(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1):
+            coverageSeries = cmatrices.loc[k].iloc[:,:k].sum(axis=1)
+            covered = (coverageSeries>0).sum()
+            coverage = covered/len(coverageSeries)
+            coverage_k.append(coverage)
+        fig, ax = plt.subplots(1,1)
+        plt.plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), coverage_k)
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.set_xlabel('k')
+        ax.set_ylabel('coverage')
+        plt.savefig(os.path.join(output_path, 'coverage.png'))

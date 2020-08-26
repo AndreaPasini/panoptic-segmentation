@@ -70,17 +70,18 @@ def get_isomorphism_count_vect(graph, freq_graphs):
     cvector = np.zeros(len(freq_graphs))
     g_nodes = {n['label'] for n in graph['nodes']}
     for i, fgraph in enumerate(freq_graphs):
-        # Sub-graph isomorphism
-        fg_nodes = {n['label'] for n in fgraph['g']['nodes']}
-        if len(fg_nodes - g_nodes) == 0:
-            match_list = subgraph_isomorphism(fgraph['g'], graph)
-            cvector[i] += len(match_list)
+            # Sub-graph isomorphism
+            fg_nodes = {n['label'] for n in fgraph['g']['nodes']}
+            if len(fg_nodes - g_nodes) == 0:
+                match_list = subgraph_isomorphism(fgraph['g'], graph)
+                cvector[i] += len(match_list)
     return cvector
 
 
 def compute_coverage_mat(config):
     """
     Given a graph mining experiment configuration, associate training COCO images to frequent graphs.
+    Important: in the result considers only frequent graphs with >=2 nodes.
     Result is a count matrix saved to a csv file (1 row for each image, 1 column for each freq graph)
     :param config: experiment configuration (SImS_config class)
     """
@@ -94,9 +95,16 @@ def compute_coverage_mat(config):
     pbar = tqdm(total=len(train_graphs_filtered))
     cmatrix = []
     # Subgraph isomorphism to match frequent graphs with COCO train graphs
+    g_ids = []
+    freq_graphs2 = []
+    for i, g in enumerate(freq_graphs):
+        if len(g['g']['nodes']) >= 2:
+            g_ids.append(i)
+            freq_graphs2.append(g)
     for g in train_graphs_filtered:
-        cmatrix.append(get_isomorphism_count_vect(g, freq_graphs))
-        pbar.update()
+            # Important: at least "2 nodes" to be considered.
+            cmatrix.append(get_isomorphism_count_vect(g, freq_graphs2))
+            pbar.update()
     pbar.close()
-    cmatrix = pd.DataFrame(cmatrix)
+    cmatrix = pd.DataFrame(cmatrix, columns=g_ids)
     cmatrix.to_csv(output_file, sep=",", index=False)
