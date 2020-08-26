@@ -104,11 +104,12 @@ def compute_coverage_mat(config):
     output_file = os.path.join(config.SGS_dir, "coverage_mat_"+experiment_name+".csv")
 
     # Read training graphs
+    tmp = config.SGS_params
     config.SGS_params['edge_pruning']=True
     config.SGS_params['node_pruning']=True
     train_graphs_filtered = prepare_graphs_with_PRS(config)
-    config.SGS_params['edge_pruning']=False
-    config.SGS_params['node_pruning']=False
+    config.SGS_params=tmp
+
 
     # Read frequent graphs
     freq_graphs = read_freqgraphs(config)
