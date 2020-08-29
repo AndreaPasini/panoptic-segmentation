@@ -15,7 +15,7 @@ from sims.sgs import build_SGS, load_and_print_SGS
 from sims.graph_algorithms import compute_coverage_mat
 import pandas as pd
 import sys
-
+import os
 
 def main():
     ### Choose methods to be run ###
@@ -30,20 +30,15 @@ def main():
 
         #3. Run one of the following options
         compute_SGS = False           # Compute the Scene Graph Summary
-        compute_coverage_mat = True  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
+        compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
         print_SGS_graphs = False      # Plot SGS scene graphs
 
 
 
         ########### TODO #############
-        evaluate_SGS = False         # Plot table with statistics for the different SGS configurations
+        evaluate_SGS = True         # Plot table with statistics for the different SGS configurations
 
-## TT: 8, 10, 11(subdue)
-### TF: TF  3, 6(subdue)
-## FF: 0
 
-#done: 8, 11
-#Doing: 10(OK), 6, 0
 
 
     # Experiment configuration
@@ -97,6 +92,7 @@ def main():
         end_time = datetime.now()
         print('Duration: ' + str(end_time - start_time))
 
+
     if RUN_CONFIG.print_SGS_graphs:
         print(f"Selected experiment: {experiment}")
         # Print graphs to file
@@ -125,14 +121,18 @@ def main():
 
 
 
-
     if RUN_CONFIG.evaluate_SGS:
+
+        ## TT: 8, 10, 11(subdue)
+        ### TF: TF  3, 6(subdue)
+        ## FF: 0
+        # done: 8, 11,  con trusciatura (6, 0), 10
 
         ####!!!!!! TODO: calcolare la coverage !!!!!!!
         # Important: at least "2 nodes" to be considered.!!!!!!!!!!!1
 
         if RUN_CONFIG.dataset=='COCO':
-            exp_list = [11, 1, 6, 8, 4, 9]    # Selected experiments for analyzing statistics
+            exp_list = [0, 3, 8, 10, 6, 11]    # Selected experiments for analyzing statistics
         else:
             exp_list = [11,6]
 
@@ -143,8 +143,10 @@ def main():
             results.append(res)
         print("Graph mining statistics.")
         res_df = pd.DataFrame(results, columns=["Minsup","Edge pruning","Node pruning","N. graphs",
-                                                "Sub-topic Coverage","Distinct Set Ratio","Avg. nodes","Std. nodes",
-                                                "Distinct Node Ratio"])#,"Max. distinct classes","Avg. distinct classes"
+                                                #"Sub-topic Coverage",
+                                                "Avg. nodes","Std. nodes",
+                                                "Coverage",
+                                                "Diversity"])#"Distinct Set Ratio" "Distinct Node Ratio" ,"Max. distinct classes","Avg. distinct classes"
         # Print latex table
         print(res_df.to_latex(index=False))
 

@@ -10,7 +10,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 
-from sims.sgs import read_freqgraphs
+from sims.sgs import load_sgs
 
 from main_sims2 import get_maximal_itemsets
 from sims.graph_utils import json_to_graphviz
@@ -18,7 +18,7 @@ from sims.sims_config import SImS_config
 
 if __name__ == '__main__':
     config = SImS_config('COCO')
-    fgraphs = read_freqgraphs(config)
+    fgraphs = load_sgs(config)
     maximal_fgraphs = get_maximal_itemsets(fgraphs)
 
     # components = [html.Div(children=dash_interactive_graphviz.DashInteractiveGraphviz(id=f"graph{i}",

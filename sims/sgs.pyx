@@ -56,7 +56,7 @@ def prepare_graphs_with_PRS(simsConf):
 
 def build_SGS(simsConf):
     """
-    Run graph mining experiment
+    Build the SGS (Scene Graph Summary) with frequent subgraph mining
     :param simsConf: experimental configuration class
     """
     config = simsConf.SGS_params
@@ -94,19 +94,19 @@ def build_SGS(simsConf):
     elif config['alg'] == 'subdue':
         run_subdue_mining(input_graphs_data_path, config['nsubs'], sgs_graphs_path, obj_categories, rel_categories)
 
-def read_freqgraphs(simsConf):
+def load_sgs(simsConf):
     """
-    Read Json frequent graphs generated with run_graph_mining()
+    Read Json graphs in the SGS, generated with build_SGS()
     :param simsConf: experimental configuration class
-    :return: loaded json frequent graphs
+    :return: loaded json frequent graphs (SGS)
     """
     exp_name = simsConf.getSGS_experiment_name()
 
     # Read frequent graphs
-    freq_graphs_path = os.path.join(simsConf.SGS_dir, exp_name + '.json')
-    with open(freq_graphs_path, 'r') as f:
-        freq_graphs = json.load(f)
-    return freq_graphs
+    sgs_path = os.path.join(simsConf.SGS_dir, exp_name + '.json')
+    with open(sgs_path, 'r') as f:
+        sgs_graphs = json.load(f)
+    return sgs_graphs
 
 
 def load_and_print_SGS(simsConf, subsample=True, pdfformat=True, alternate_colors=True, clean_class_names=True):
@@ -118,7 +118,7 @@ def load_and_print_SGS(simsConf, subsample=True, pdfformat=True, alternate_color
     :param alternate_colors: True if you want to alternate different colors for nodes
     :param clean_class_names: True if you want to print cleaned COCO classes (e.g. remove "-merged")
     """
-    graphs = read_freqgraphs(simsConf)
+    graphs = load_sgs(simsConf)
     out_path = os.path.join(simsConf.SGS_dir, f"charts/{simsConf.getSGS_experiment_name()}")
     if not os.path.exists(out_path):
         os.makedirs(out_path)

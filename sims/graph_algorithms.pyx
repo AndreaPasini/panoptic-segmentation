@@ -8,7 +8,7 @@ from tqdm import tqdm
 import copy
 from networkx.algorithms.isomorphism import categorical_node_match, categorical_edge_match, DiGraphMatcher
 from sims.graph_utils import json_to_nx
-from sims.sgs import prepare_graphs_with_PRS, read_freqgraphs
+from sims.sgs import prepare_graphs_with_PRS, load_sgs
 
 def subgraph_isomorphism(subgraph, graph, induced=False):
     """
@@ -53,11 +53,6 @@ def subgraph_isomorphism(subgraph, graph, induced=False):
         nmatch = categorical_node_match('label','')
         ematch = categorical_edge_match('pos','')
 
-        # print(len(graph['nodes']),len(subgraph['nodes']))
-        #
-        # if (len(graph['nodes'])==15 and len(subgraph['nodes'])==6):
-        #     print("")
-
         matcher = DiGraphMatcher(json_to_nx(graph), json_to_nx(subgraph),
                                  node_match=nmatch, edge_match=ematch)
         res_list = []
@@ -74,17 +69,17 @@ def subgraph_isomorphism(subgraph, graph, induced=False):
         return []
 
 
-def get_isomorphism_count_vect(graph, freq_graphs):
+def get_isomorphism_count_vect(graph, sgs_graphs):
     """
     Associate a json graph to the frequent graphs (sub-graph isomorphism).
     Obtain a count-vector with the number of found instances for each frequent graph
-    :param graph: json graph with
-    :param freq_graphs: frequent graphs (obtained with gspan or subdue)
-    :return: the count-vector (Numpy) with the number of found instances for each frequent graph
+    :param graph: json graph
+    :param sgs_graphs: frequent graphs in the SGS
+    :return: the count-vector (Numpy) with the number of found instances for each SGS graph
     """
-    cvector = np.zeros(len(freq_graphs))
+    cvector = np.zeros(len(sgs_graphs))
     g_nodes = {n['label'] for n in graph['nodes']}
-    for i, fgraph in enumerate(freq_graphs):
+    for i, fgraph in enumerate(sgs_graphs):
             # Sub-graph isomorphism
             fg_nodes = {n['label'] for n in fgraph['g']['nodes']}
             if len(fg_nodes - g_nodes) == 0:
@@ -95,9 +90,9 @@ def get_isomorphism_count_vect(graph, freq_graphs):
 
 def compute_coverage_mat(config):
     """
-    Given a graph mining experiment configuration, associate training COCO images to frequent graphs.
-    Important: in the result considers only frequent graphs with >=2 nodes.
-    Result is a count matrix saved to a csv file (1 row for each image, 1 column for each freq graph)
+    Given an SGS experimental configuration, associate training COCO images to SGS graphs.
+    Important: in the result considers only SGS graphs with >=2 nodes.
+    Result is a count matrix saved to a csv file (1 row for each image, 1 column for each SGS graph)
     :param config: experiment configuration (SImS_config class)
     """
     experiment_name = config.getSGS_experiment_name()
@@ -106,26 +101,49 @@ def compute_coverage_mat(config):
     # Read training graphs
     tmp = config.SGS_params
     config.SGS_params['edge_pruning']=True
-    config.SGS_params['node_pruning']=True
+    config.SGS_params['node_pruning']=True # This speeds up process.
     train_graphs_filtered = prepare_graphs_with_PRS(config)
     config.SGS_params=tmp
 
 
     # Read frequent graphs
-    freq_graphs = read_freqgraphs(config)
+    sgs_graphs = load_sgs(config)
     pbar = tqdm(total=len(train_graphs_filtered))
     cmatrix = []
     # Subgraph isomorphism to match frequent graphs with COCO train graphs
     g_ids = []
-    freq_graphs2 = []
-    for i, g in enumerate(freq_graphs):
+    filtered_sgs = []
+    for i, g in enumerate(sgs_graphs):
         if len(g['g']['nodes']) >= 2:
             g_ids.append(i)
-            freq_graphs2.append(g)
+            filtered_sgs.append(g)
     for g in train_graphs_filtered:
             # Important: at least "2 nodes" to be considered.
-            cmatrix.append(get_isomorphism_count_vect(g, freq_graphs2))
+            cmatrix.append(get_isomorphism_count_vect(g, filtered_sgs))
             pbar.update()
     pbar.close()
     cmatrix = pd.DataFrame(cmatrix, columns=g_ids)
     cmatrix.to_csv(output_file, sep=",", index=False)
+
+def compute_diversity(sgs_graphs):
+    """
+    Given json graphs, compute diversity score.
+    :param sgs_graphs: list of the SGS json graphs
+    :return: diversity score (float)
+    """
+    node_sets = []
+    for g in sgs_graphs:
+        node_sets.append({n['label'] for n in g['g']['nodes']})
+
+    distances = 0
+    n = 0
+    for i in range(len(node_sets)):
+        for j in range(i+1, len(node_sets)):
+            ni = node_sets[i]
+            nj = node_sets[j]
+            intersect = ni & nj
+            union = ni | nj
+            distances += 1-len(intersect)/len(union)
+            n+=1
+
+    return distances/n

@@ -1,17 +1,19 @@
 import pyximport
 
-from panopticapi.utils import read_train_img_captions
+from sims.graph_algorithms import compute_diversity
 
 pyximport.install(language_level=3)
+from panopticapi.utils import read_train_img_captions
 
 from scipy.stats import entropy
 import json
 from config import COCO_PRS_json_path, COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, \
     COCO_train_graphs_subset2_json_path, COCO_SGS_dir
 from sims.prs import filter_PRS_histograms
-from sims.sgs import read_freqgraphs
+from sims.sgs import load_sgs
 import numpy as np
 import os
+import pandas as pd
 
 def evaluate_SGS(simsConf):
     """
@@ -21,7 +23,10 @@ def evaluate_SGS(simsConf):
     """
     obj_classes,_= simsConf.load_categories()
     # Read frequent graphs
-    freq_graphs = read_freqgraphs(simsConf)
+    sgs_graphs = load_sgs(simsConf)
+    # Pick graphs with>2 nodes
+    sgs_graphs = [g for g in sgs_graphs if len(g['g']['nodes']) >= 2]
+
     dist_classes = {}
     dist_sets = {}
     tot_nodes = 0       # Number of nodes
@@ -29,7 +34,7 @@ def evaluate_SGS(simsConf):
     max_dist_nodes = 0  # Max n. distinct classes
     nodes_nodes_dist = 0    # Ratio distinct nodes / nodes
     std_nodes = []
-    for g in freq_graphs:
+    for g in sgs_graphs:
         nodes = [n['label'] for n in g['g']['nodes']]   # All node classes
         tot_nodes += len(nodes)                         # Number of nodes
         std_nodes.append(len(nodes))
@@ -49,20 +54,83 @@ def evaluate_SGS(simsConf):
         else:
             dist_sets[nodes_tuple] = 1
 
+
+    # Compute coverage
+    cmatrix = pd.read_csv(os.path.join(simsConf.SGS_dir, "coverage_mat_" + simsConf.getSGS_experiment_name() + ".csv"),
+                          index_col=None)
+    covered = (cmatrix.sum(axis=1) > 0).sum()
+    coverage = covered / len(cmatrix)
+
+    # Compute diversity
+    diversity = compute_diversity(sgs_graphs)
+
     config = simsConf.SGS_params
     if 'minsup' not in config:
         config['minsup'] = None
     res_dict = {"Minsup":config['minsup'],
                 "Edge pruning": 'Y' if config['edge_pruning'] else 'N',
                 "Node pruning": 'Y' if config['node_pruning'] else 'N',
-                "N. graphs": len(freq_graphs), "Sub-topic Coverage": round(len(dist_classes)/len(obj_classes),2),
+                "N. graphs": len(sgs_graphs), "Sub-topic Coverage": round(len(dist_classes)/len(obj_classes),2),
                 "N. distinct class sets": len(dist_sets),
-                "Distinct Set Ratio": round(len(dist_sets)/len(freq_graphs), 3),
-                "Avg. nodes": round(tot_nodes / len(freq_graphs), 2),
-                "Avg. distinct classes": round(tot_dist_nodes / len(freq_graphs),2), "Max. distinct classes": max_dist_nodes,
-                "Distinct Node Ratio":round(nodes_nodes_dist/len(freq_graphs),2),
-                "Std. nodes": round(np.std(std_nodes),2)}
+                "Distinct Set Ratio": round(len(dist_sets)/len(sgs_graphs), 3),
+                "Avg. nodes": round(tot_nodes / len(sgs_graphs), 2),
+                "Avg. distinct classes": round(tot_dist_nodes / len(sgs_graphs),2), "Max. distinct classes": max_dist_nodes,
+                "Distinct Node Ratio":round(nodes_nodes_dist/len(sgs_graphs),2),
+                "Std. nodes": round(np.std(std_nodes),2),
+                "Coverage" : coverage,
+                "Diversity" : diversity}
     return res_dict
+
+# def evaluate_SGS(simsConf):
+#     """
+#     Compute statistics (avg. nodes, distinct classes, ...) on the extracted frequent subgraphs.
+#     :param simsConf: experimental configuration class
+#     :return: dictionary with statistics
+#     """
+#     obj_classes,_= simsConf.load_categories()
+#     # Read frequent graphs
+#     freq_graphs = read_freqgraphs(simsConf)
+#     dist_classes = {}
+#     dist_sets = {}
+#     tot_nodes = 0       # Number of nodes
+#     tot_dist_nodes = 0  # Number of distinct classes in each graph
+#     max_dist_nodes = 0  # Max n. distinct classes
+#     nodes_nodes_dist = 0    # Ratio distinct nodes / nodes
+#     std_nodes = []
+#     for g in freq_graphs:
+#         nodes = [n['label'] for n in g['g']['nodes']]   # All node classes
+#         tot_nodes += len(nodes)                         # Number of nodes
+#         std_nodes.append(len(nodes))
+#         nodes_set = set(nodes)
+#         tot_dist_nodes += len(nodes_set)                # Number of distinct classes
+#         max_dist_nodes = max(max_dist_nodes, len(nodes_set)) # Max n. distinct classes
+#         nodes_nodes_dist += len(nodes_set)/len(nodes)
+#         # Add
+#         for n in nodes_set:                             # Track distinct classes
+#             if n in dist_classes:
+#                 dist_classes[n] += 1
+#             else:
+#                 dist_classes[n] = 1
+#         nodes_tuple = tuple(sorted(nodes_set))          # Track distinct class sets
+#         if nodes_tuple in dist_sets:
+#             dist_sets[nodes_tuple] += 1
+#         else:
+#             dist_sets[nodes_tuple] = 1
+#
+#     config = simsConf.SGS_params
+#     if 'minsup' not in config:
+#         config['minsup'] = None
+#     res_dict = {"Minsup":config['minsup'],
+#                 "Edge pruning": 'Y' if config['edge_pruning'] else 'N',
+#                 "Node pruning": 'Y' if config['node_pruning'] else 'N',
+#                 "N. graphs": len(freq_graphs), "Sub-topic Coverage": round(len(dist_classes)/len(obj_classes),2),
+#                 "N. distinct class sets": len(dist_sets),
+#                 "Distinct Set Ratio": round(len(dist_sets)/len(freq_graphs), 3),
+#                 "Avg. nodes": round(tot_nodes / len(freq_graphs), 2),
+#                 "Avg. distinct classes": round(tot_dist_nodes / len(freq_graphs),2), "Max. distinct classes": max_dist_nodes,
+#                 "Distinct Node Ratio":round(nodes_nodes_dist/len(freq_graphs),2),
+#                 "Std. nodes": round(np.std(std_nodes),2)}
+#     return res_dict
 
 
 def create_COCO_images_subset():
