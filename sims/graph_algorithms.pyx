@@ -100,8 +100,8 @@ def compute_coverage_mat(config):
 
     # Read training graphs
     tmp = config.SGS_params
-    config.SGS_params['edge_pruning']=True
-    config.SGS_params['node_pruning']=True # This speeds up process.
+    #config.SGS_params['edge_pruning']=True
+    #config.SGS_params['node_pruning']=True # This speeds up process.
     train_graphs_filtered = prepare_graphs_with_PRS(config)
     config.SGS_params=tmp
 

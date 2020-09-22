@@ -10,7 +10,7 @@ from multiprocessing.pool import Pool
 from scipy.stats import entropy
 from tqdm import tqdm
 from sims.graph_utils import json_to_nx, nx_to_json
-
+import matplotlib.pyplot as plt
 
 def compute_hist_from_graph(graph):
     """
@@ -153,6 +153,49 @@ def get_sup_ent_lists(prs):
     ent = [h['entropy'] for h in prs.values()]
     return sup, ent
 
+def clean_histogram(h, top_n=None):
+    """
+    Given a PRS histogram, get cleaned version for better printing.
+    Clean =  show only likelihoods > 1/len(histogram) if top_n not specified.
+    Clean = top-n likelihoods if top_n specified
+    :param h: input histogram (dictionary with relationship:likelihood)
+    :param top_n: if specified, get top-n likelihoods in this histogram
+    :return: cleaned histogram
+    """
+    h_clean = {}
+    nclasses = len(h)-2
+    elements = [(c,freq) for c,freq in h.items() if c!="entropy" and c!="sup"]
+    elements = sorted(elements, key=lambda el: -el[1])
+    if top_n:
+        elements = elements[:top_n]
+    for c,freq in elements:
+        if freq>1/nclasses or top_n is not None:
+            h_clean[c]=round(freq,3)
+    h_clean['sup']=h['sup']
+    h_clean['entropy']=round(h['entropy'],2)
+    return h_clean
+
+def plot_histogram(h, ax=None, cleaning=None):
+    """
+    Plot PRS histogram
+    :param h: PRS histogram (dictionary)
+    :param ax: axes for plot (optional)
+    :param cleaning: None = no cleaning,
+                    Number = top-k histogram values,
+                    True = print histogram values if >1/len(hist)
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=[5,3])
+    if cleaning==True:
+        h=clean_histogram(h)
+    elif type(cleaning)==int:
+        h=clean_histogram(h,cleaning)
+    xaxis = [k for k,v in h.items() if k not in ['sup','entropy']]
+    values = [v for k,v in h.items() if k not in ['sup','entropy']]
+    ax.bar(xaxis, values)
+    ax.grid(axis='x')
+    ax.set_ylabel("likelihood")
+    ax.set_xticklabels(xaxis, rotation=90)
 
 def edge_pruning(prs, graphs):
     """
@@ -250,3 +293,5 @@ def node_pruning(graphs):
     print(f"Average number of nodes in pruned graphs: {stat_avg_nnodes_filtered / len(graphs)}")
     print(f"Number of removed nodes: {stat_avg_nnodes - stat_avg_nnodes_filtered} ({100*(stat_avg_nnodes - stat_avg_nnodes_filtered)/stat_avg_nnodes}%)")
     return pruned_graphs
+
+

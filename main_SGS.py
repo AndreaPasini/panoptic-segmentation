@@ -3,7 +3,7 @@ Author: Andrea Pasini
 This file provides the code for running the following experiments:
 - Compute the Scene Graph Summary with graph mining and different configurations
 - Visualize frequent scene graphs in the SGS
-- Analyze SGS statistics
+- Analyze SGS with coverage and diversity
 """
 import pyximport
 pyximport.install(language_level=3)
@@ -11,7 +11,7 @@ pyximport.install(language_level=3)
 from datetime import datetime
 from sims.sims_config import SImS_config
 from sims.sgs_evaluation import evaluate_SGS, create_COCO_images_subset, create_COCO_images_subset2
-from sims.sgs import build_SGS, load_and_print_SGS
+from sims.sgs import build_SGS, load_and_print_SGS, load_and_print_SGS_images
 from sims.graph_algorithms import compute_coverage_mat
 import pandas as pd
 import sys
@@ -21,25 +21,23 @@ def main():
     ### Choose methods to be run ###
     class RUN_CONFIG:
         #1. Select an experimental configuration
-        experiment = 3 # Index of the experiment configuration to be run (if not specified as command-line argument)
+        experiment = 12 # Index of the experiment configuration to be run (if not specified as command-line argument)
         #2. Choose a dataset
-        dataset = 'COCO'
+        #dataset = 'COCO'
         #dataset = 'COCO_subset' # Experiment with only 4 COCO scenes (for paper comparisons)
-        #dataset = 'COCO_subset2' # Experiment with images selected by COCO caption
+        dataset = 'COCO_subset2' # Experiment with images selected by COCO caption
         # dataset = 'VG'
 
         #3. Run one of the following options
         compute_SGS = False           # Compute the Scene Graph Summary
         compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
         print_SGS_graphs = False      # Plot SGS scene graphs
+        print_SGS_images = True       # Plot images associated to SGS graphs
 
-
-
-        ########### TODO #############
-        evaluate_SGS = True         # Plot table with statistics for the different SGS configurations
-
-
-
+        #4. Run final evaluation
+        #experiment_list = [0, 3, 8, 10, 6, 11] # Experiments for whole COCO (paper)
+        experiment_list = [(12, i) for i in range(2, 21)] # Experiment for COCO subset1 and subset2
+        evaluate_SGS_experiments = False # Plot table with evaluation for SGS configurations in experiment_list
 
     # Experiment configuration
     experiments = [
@@ -57,8 +55,6 @@ def main():
                    {'alg': 'subdue', 'edge_pruning': True, 'node_pruning': True, 'nsubs': 10000},  #11) 17m
 
                    {'alg': 'gspan', 'edge_pruning': True, 'node_pruning': True, 'minsup': 0.05} #12        (GOLD for COCO subset)
-
-
                    ]
 
     ### SETUP of the experiments ###
@@ -73,7 +69,9 @@ def main():
 
 
     ### Execution of the different experiment phases ###
+
     if RUN_CONFIG.compute_SGS:
+        # Compute the Scene Graph Summary
         if RUN_CONFIG.dataset == 'COCO_subset':
             create_COCO_images_subset()
         elif RUN_CONFIG.dataset == 'COCO_subset2':
@@ -103,54 +101,33 @@ def main():
         # load_and_print_SGS(config, subsample=list(range(1100, 1190)))
         load_and_print_SGS(config)
 
+    if RUN_CONFIG.print_SGS_images:
+        print(f"Selected experiment: {experiment}")
+        load_and_print_SGS_images(config)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if RUN_CONFIG.evaluate_SGS:
-
-        ## TT: 8, 10, 11(subdue)
-        ### TF: TF  3, 6(subdue)
-        ## FF: 0
-        # done: 8, 11,  con trusciatura (6, 0), 10
-
-        ####!!!!!! TODO: calcolare la coverage !!!!!!!
-        # Important: at least "2 nodes" to be considered.!!!!!!!!!!!1
-
-        if RUN_CONFIG.dataset=='COCO':
-            exp_list = [0, 3, 8, 10, 6, 11]    # Selected experiments for analyzing statistics
-        else:
-            exp_list = [11,6]
-
+    if RUN_CONFIG.evaluate_SGS_experiments:
+        # Compute evaluation metrics for all the specified experimental configurations
         results = []
-        for selected_experiment in exp_list:
+        topk = None
+        for selected_experiment in RUN_CONFIG.experiment_list:
+            if type(selected_experiment) is tuple:
+                topk = selected_experiment[1]
+                selected_experiment = selected_experiment[0]
+            print(f"Evaluating {experiments[selected_experiment]}...")
             config.setSGS_params(experiments[selected_experiment])
-            res = evaluate_SGS(config)
+            res = evaluate_SGS(config, topk)
             results.append(res)
         print("Graph mining statistics.")
+
         res_df = pd.DataFrame(results, columns=["Minsup","Edge pruning","Node pruning","N. graphs",
-                                                #"Sub-topic Coverage",
                                                 "Avg. nodes","Std. nodes",
                                                 "Coverage",
-                                                "Diversity"])#"Distinct Set Ratio" "Distinct Node Ratio" ,"Max. distinct classes","Avg. distinct classes"
+                                                "Diversity"])
+
+
         # Print latex table
         print(res_df.to_latex(index=False))
-
-
+        res_df.to_csv(os.path.join(config.SGS_dir, 'evaluation.csv'))
 
 if __name__ == '__main__':
     main()

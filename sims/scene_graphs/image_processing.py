@@ -39,9 +39,10 @@ def mask_baricenter(mask):
         return x, y
     else: return None, None
 
-def getImageName(imageId, pathFile, extension="png"):
+def getImageName(imageId, pathFile=None, extension="png"):
     """ Return image file name, given COCO Id and path."""
     imageid = int(imageId)
     imageName = f"{imageid:012d}.{extension}"
-    image = os.path.join(pathFile, imageName)
-    return image
+    if pathFile is not None:
+        imageName = os.path.join(pathFile, imageName)
+    return imageName

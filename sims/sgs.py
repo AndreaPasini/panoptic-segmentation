@@ -1,8 +1,13 @@
 import pyximport
+
+from sims.scene_graphs.image_processing import getImageName
+
 pyximport.install(language_level=3)
 
 import json
 import os
+import pandas as pd
+from shutil import copyfile
 from shutil import copyfile
 from sims.prs import get_sup_ent_lists, filter_PRS_histograms, edge_pruning, node_pruning
 from sims.gspan_mining.mining import prepare_gspan_graph_data, run_gspan_mining
@@ -124,3 +129,36 @@ def load_and_print_SGS(simsConf, subsample=True, pdfformat=True, alternate_color
         os.makedirs(out_path)
     # Print graphs
     print_graphs(graphs, out_path, subsample, pdfformat, alternate_colors, clean_class_names)
+
+##############TODOOOOOOOOOOOOOO rinominare in pyx
+def load_and_print_SGS_images(simsConf):
+    """
+    Plot images associated to SGS graphs
+    :param simsConf: experimental configuration class
+    :param subsample: subsample graphs if >500
+    """
+    graphs = load_sgs(simsConf)
+    # Read coverage matrix
+    coverage_mat = pd.read_csv(os.path.join(simsConf.SGS_dir,
+                                "coverage_mat_" + simsConf.getSGS_experiment_name() + ".csv"),
+                               index_col=None)
+    # Get number of nodes for each input scene graph
+    with open(simsConf.scene_graphs_json_path) as f:
+        input_graphs = json.load(f)
+    coverage_mat['nNodes'] = 0
+    for i, g in enumerate(input_graphs):
+        coverage_mat.loc[i,'nNodes'] = len(g['nodes'])
+
+    out_path = os.path.join(simsConf.SGS_dir, f"charts/{simsConf.getSGS_experiment_name()}")
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+
+    # Print images (among candidates choose the one with lower number of nodes)
+    for gid, g in enumerate(graphs):
+        if str(gid) in coverage_mat.columns:
+            col = coverage_mat[[str(gid),'nNodes']]
+            col = col[col.iloc[:,0]>0]
+            selectedImgIndex = col['nNodes'].idxmin()
+            selectedImg = input_graphs[selectedImgIndex]['graph']['name']
+            imgName = getImageName(selectedImg, extension='jpg')
+            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}.jpg"))

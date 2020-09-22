@@ -1,10 +1,13 @@
+
+import pyximport
+pyximport.install(language_level=3)
+
 import cv2
 import os
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
-from config import COCO_img_train_dir, COCO_train_graphs_subset_json_path, COCO_SGS_dir, COCO_train_graphs_json_path, \
-    COCO_train_graphs_subset2_json_path
+from config import COCO_img_train_dir, COCO_train_graphs_subset_json_path, COCO_train_graphs_subset2_json_path
 import numpy as np
 from sklearn.cluster import KMeans
 from joblib import dump, load
@@ -14,8 +17,10 @@ import json
 from pyclustering.cluster.kmedoids import kmedoids
 from tqdm import tqdm
 from sims.graph_algorithms import get_isomorphism_count_vect
+from sims.sgs_evaluation import evaluate_summary_graphs
 from sims.sims_config import SImS_config
 from sims.visualization import print_graphs
+from sims.graph_algorithms import compute_diversity
 
 competitors_dir = '../COCO/competitors/'
 
@@ -195,13 +200,13 @@ def compute_coverage(summary, collection):
 if __name__ == "__main__":
     class RUN_CONFIG:
         compute_BOW_descriptors = False # Map each COCO image to its BOW descriptors
-        run_kmedoids = False            # Run KMedoids summary for different k values
+        run_kmedoids = True            # Run KMedoids summary for different k values
         print_kmedoids_graphs = False     # Print scene graphs of selected kmedoids images (for each k)
         compute_kmedoids_coverage_matrix = False # Compute graph coverage matrix for kmedoids
         compute_coverage = True  # Use coverage matrix to compute graph coverage
 
-        dataset = 'COCO_subset'     # Choose dataset
-        #dataset = 'COCO_subset2'
+        #dataset = 'COCO_subset'     # Choose dataset
+        dataset = 'COCO_subset2'
         if dataset == 'COCO_subset':
             mink = 4                        # Min value of k to test kmedoids
             maxk = 20                       # Max value of k to test kmedoids
@@ -275,16 +280,68 @@ if __name__ == "__main__":
         cmatrices.to_csv(output_file, sep=",")
 
     if RUN_CONFIG.compute_coverage:
+
+
+        config = SImS_config(RUN_CONFIG.dataset)
+        with open(kmedoids_out_clusters_path) as f:
+            kmedoids_result = json.load(f)
+        with open(config.scene_graphs_json_path, 'r') as f:
+            coco_graphs = json.load(f)
+        kmedoids_graphs = get_kmedoids_graphs(kmedoids_result, coco_graphs)
         cmatrices = pd.read_csv(os.path.join(output_path, "coverage_mat.csv"), index_col='k')
-        coverage_k = []
-        for k in range(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1):
-            coverageSeries = cmatrices.loc[k].iloc[:,:k].sum(axis=1)
-            covered = (coverageSeries>0).sum()
-            coverage = covered/len(coverageSeries)
-            coverage_k.append(coverage)
-        fig, ax = plt.subplots(1,1)
-        plt.plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), coverage_k)
-        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-        ax.set_xlabel('k')
-        ax.set_ylabel('coverage')
-        plt.savefig(os.path.join(output_path, 'coverage.png'))
+
+        results = []
+        for k, summary_graphs_i in kmedoids_graphs.items():
+            res = evaluate_summary_graphs([{'g':s} for s in summary_graphs_i], cmatrices.loc[int(k)].iloc[:,:int(k)])
+            results.append(res)
+
+        kmed_df = pd.DataFrame(results, columns=["N. graphs",
+                                                "Avg. nodes", "Std. nodes",
+                                                "Coverage",
+                                                "Diversity"])
+        sims_df = pd.read_csv(os.path.join(config.SGS_dir, 'evaluation.csv'), index_col=0)
+
+        fig, ax = plt.subplots(1,2, figsize=[9,3])
+        ax[0].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Coverage'], label='SImS',
+                   marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
+        ax[0].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Coverage'], label='KMedoids',
+                   marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
+        ax[0].set_xlabel('# graphs')
+        ax[0].xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax[0].set_ylabel('coverage')
+        ax[0].grid(axis='y')
+        ax[1].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Diversity'], label='SImS',
+                   marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
+        ax[1].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Diversity'], label='KMedoids',
+                   marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
+
+        ax[1].set_xlabel('# graphs')
+        ax[1].xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax[1].set_ylabel('diversity')
+        ax[1].grid(axis='y')
+        ax[1].legend(bbox_to_anchor=(1.6, 0.4), loc="lower right")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_path, 'evaluation.eps'), bbox_inches='tight')
+
+        fig, ax = plt.subplots(1,2, figsize=[8,3], sharey=True)
+        ax[0].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Coverage'], label='KMedoids',
+                   marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
+        ax[1].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Coverage'], label='Coverage',
+                   marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
+        ax[0].set_xlabel('# graphs')
+        ax[0].xaxis.set_major_locator(MaxNLocator(integer=True))
+        #ax[0].set_ylabel('coverage')
+        ax[0].grid(axis='y')
+        ax[0].set_title('SImS')
+        ax[0].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Diversity'], label='KMedoids',
+                   marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
+        ax[1].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Diversity'], label='Diversity',
+                   marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
+        ax[1].set_xlabel('# graphs')
+        ax[1].xaxis.set_major_locator(MaxNLocator(integer=True))
+        #ax[1].set_ylabel('diversity')
+        ax[1].grid(axis='y')
+        ax[1].legend(bbox_to_anchor=(1.6, 0.4), loc="lower right")
+        ax[1].set_title('KMedoids')
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_path, 'evaluation2.eps'), bbox_inches='tight')
