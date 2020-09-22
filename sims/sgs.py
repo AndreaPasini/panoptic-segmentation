@@ -158,7 +158,16 @@ def load_and_print_SGS_images(simsConf):
         if str(gid) in coverage_mat.columns:
             col = coverage_mat[[str(gid),'nNodes']]
             col = col[col.iloc[:,0]>0]
+
+
+            # Min:
+            #selectedImg = input_graphs[selectedImgIndex]['graph']['name']
+            # if Avg:
+            col['nNodes'] = (col['nNodes']-col['nNodes'].mean()).abs()
+
             selectedImgIndex = col['nNodes'].idxmin()
             selectedImg = input_graphs[selectedImgIndex]['graph']['name']
+
+
             imgName = getImageName(selectedImg, extension='jpg')
-            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}.jpg"))
+            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}_avg.jpg"))
