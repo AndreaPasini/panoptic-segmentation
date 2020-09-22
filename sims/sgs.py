@@ -8,7 +8,6 @@ import json
 import os
 import pandas as pd
 from shutil import copyfile
-from shutil import copyfile
 from sims.prs import get_sup_ent_lists, filter_PRS_histograms, edge_pruning, node_pruning
 from sims.gspan_mining.mining import prepare_gspan_graph_data, run_gspan_mining
 from sims.subdue_mining.mining import prepare_subdue_graph_data, run_subdue_mining
@@ -159,15 +158,10 @@ def load_and_print_SGS_images(simsConf):
             col = coverage_mat[[str(gid),'nNodes']]
             col = col[col.iloc[:,0]>0]
 
-
-            # Min:
-            #selectedImg = input_graphs[selectedImgIndex]['graph']['name']
             # if Avg:
-            col['nNodes'] = (col['nNodes']-col['nNodes'].mean()).abs()
+            #col['nNodes'] = (col['nNodes']-col['nNodes'].mean()).abs()
 
             selectedImgIndex = col['nNodes'].idxmin()
             selectedImg = input_graphs[selectedImgIndex]['graph']['name']
-
-
             imgName = getImageName(selectedImg, extension='jpg')
-            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}_avg.jpg"))
+            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}.jpg"))

@@ -1,7 +1,10 @@
 
 import pyximport
-pyximport.install(language_level=3)
 
+from sims.scene_graphs.image_processing import getImageName
+
+pyximport.install(language_level=3)
+from shutil import copyfile
 import cv2
 import os
 import matplotlib.pyplot as plt
@@ -200,10 +203,10 @@ def compute_coverage(summary, collection):
 if __name__ == "__main__":
     class RUN_CONFIG:
         compute_BOW_descriptors = False # Map each COCO image to its BOW descriptors
-        run_kmedoids = True            # Run KMedoids summary for different k values
-        print_kmedoids_graphs = False     # Print scene graphs of selected kmedoids images (for each k)
+        run_kmedoids = False             # Run KMedoids summary for different k values
+        print_kmedoids_graphs = True   # Print scene graphs of selected kmedoids images (for each k)
         compute_kmedoids_coverage_matrix = False # Compute graph coverage matrix for kmedoids
-        compute_coverage = True  # Use coverage matrix to compute graph coverage
+        compute_coverage = False  # Use coverage matrix to compute graph coverage
 
         #dataset = 'COCO_subset'     # Choose dataset
         dataset = 'COCO_subset2'
@@ -257,6 +260,9 @@ if __name__ == "__main__":
             if not os.path.exists(out_graphs_dir):
                 os.makedirs(out_graphs_dir)
             print_graphs(graphs, out_graphs_dir)
+            for i, g in enumerate(graphs):
+                imgName = getImageName(g['graph']['name'], extension='jpg')
+                copyfile(os.path.join(config.img_dir, imgName), os.path.join(out_graphs_dir, f"g{i}.jpg"))
 
     # Compute graph coverage for kmedoids
     if RUN_CONFIG.compute_kmedoids_coverage_matrix:
