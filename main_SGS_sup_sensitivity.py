@@ -20,13 +20,13 @@ from datetime import datetime
 if __name__ == "__main__":
     start_time = datetime.now()
     # A)
-    #config = SImS_config('COCO_subset2')
-    #config.SGS_params['minsup'] = 0.05
+    # config = SImS_config('COCO_subset2')
+    # config.SGS_params['minsup'] = 0.05
     # B)
     config = SImS_config('COCO')
 
     eval_list = []
-    for sup in range(800, 0, -100):
+    for sup in range(80, 0, -20):
         config.setPRS_params(minsup=sup)
         # Build SGS (about 10 seconds for COCO)
         build_SGS(config, overwrite_PRS_cache=True)
