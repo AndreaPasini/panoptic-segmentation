@@ -22,7 +22,7 @@ if __name__ == "__main__":
     config = SImS_config('COCO_subset2')
     config.SGS_params['minsup'] = 0.05
     eval_list = []
-    for sup in range(100, 10, -10):
+    for sup in range(20, 0, -5):
         config.setPRS_params(minsup=sup)
         # Build SGS (about 10 seconds for COCO)
         build_SGS(config, overwrite_PRS_cache=True)
