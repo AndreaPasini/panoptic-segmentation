@@ -19,8 +19,12 @@ from datetime import datetime
 
 if __name__ == "__main__":
     start_time = datetime.now()
-    config = SImS_config('COCO_subset2')
-    config.SGS_params['minsup'] = 0.05
+    # A)
+    #config = SImS_config('COCO_subset2')
+    #config.SGS_params['minsup'] = 0.05
+    # B)
+    config = SImS_config('COCO')
+
     eval_list = []
     for sup in range(800, 0, -100):
         config.setPRS_params(minsup=sup)
