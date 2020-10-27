@@ -38,6 +38,20 @@ def evaluate_SGS(simsConf, topk=None):
     res["Node pruning"] = 'Y' if config['node_pruning'] else 'N'
     return res
 
+def evaluate_SGS_df(simsConf, topk=None):
+    """
+    Evaluate SImS SGS. Return result into printable dataframe.
+    Compute statistics (avg. nodes, distinct classes, ...) on the extracted frequent subgraphs.
+    :param simsConf: experimental configuration class
+    :param topk: number of top-k frequent graphs to be considered for the evaluation
+    :return: printable dataframe with statistics.
+    """
+    res = evaluate_SGS(simsConf, topk)
+    res_df = pd.DataFrame([res], columns=["Minsup", "Edge pruning", "Node pruning", "N. graphs",
+                                            "Avg. nodes", "Std. nodes",
+                                            "Coverage",
+                                            "Diversity"])
+    return res_df
 
 def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
     """

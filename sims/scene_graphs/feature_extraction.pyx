@@ -58,6 +58,7 @@ def image2strings_RPCD(img_ann, img_depth):
             ids.append(k)
             data.append((l, start_avg, end_avg))
         strings.append((ids, data))
+
     return strings
 
 def compute_string_positions(strings, object_ordering=None):

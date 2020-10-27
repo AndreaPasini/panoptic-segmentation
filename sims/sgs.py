@@ -14,11 +14,13 @@ from sims.subdue_mining.mining import prepare_subdue_graph_data, run_subdue_mini
 from sims.visualization import print_graphs
 
 
-def prepare_graphs_with_PRS(simsConf):
+def prepare_graphs_with_PRS(simsConf, overwrite_cache=False):
     """
     Given experiment configuration, return graphs, pruned and filtered according to KB
     Experiment may refer to either COCO or VG dataset.
     :param simsConf: experimental configuration class
+    :param overwrite_cache: True to force overwrite cached data from previous executions
+                             (e.g., use it when you change the configuration of PRS parameters)
     :return graphs (json format)
     """
     config = simsConf.SGS_params
@@ -26,7 +28,7 @@ def prepare_graphs_with_PRS(simsConf):
     node_pruning_str = "_nprune" if config['node_pruning'] else ""
     output_file = os.path.join(simsConf.SGS_dir, f"preparedGraphs{edge_pruning_str}{node_pruning_str}.json")
     # Check whether graph data has already been created
-    if not os.path.exists(output_file):
+    if (not os.path.exists(output_file)) or overwrite_cache:
         # Read PRS
         with open(simsConf.PRS_json_path, 'r') as f:
             prs = json.load(f)
@@ -58,10 +60,13 @@ def prepare_graphs_with_PRS(simsConf):
             return json.load(f)
 
 
-def build_SGS(simsConf):
+def build_SGS(simsConf, overwrite_PRS_cache=False):
     """
     Build the SGS (Scene Graph Summary) with frequent subgraph mining
     :param simsConf: experimental configuration class
+    :param overwrite_PRS_cache: True to force overwrite of cached PRS data from previous executions
+                               (e.g., use True when you change the configuration of the PRS.
+                               Not necessary when changing the configuration of the SGS.)
     """
     config = simsConf.SGS_params
     edge_pruning ="_eprune" if config['edge_pruning'] else ""
@@ -78,9 +83,9 @@ def build_SGS(simsConf):
         os.makedirs(simsConf.SGS_dir)
 
     # Check whether graph data has already been converted for
-    if not os.path.exists(input_graphs_data_path):
+    if not os.path.exists(input_graphs_data_path) or overwrite_PRS_cache:
         print(f"Preparing graphs for {config['alg']}...")
-        train_graphs_filtered = prepare_graphs_with_PRS(simsConf)
+        train_graphs_filtered = prepare_graphs_with_PRS(simsConf, overwrite_PRS_cache)
 
         if config['alg']=='gspan':
             # Convert json graphs to the correct format for gspan mining.

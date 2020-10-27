@@ -48,12 +48,26 @@ class SImS_config:
             self.PRS_json_path = VG_PRS_json_path
             self.scene_graphs_json_path = VG_train_graphs_json_path
 
+        # Default PRS configuration
+        self.PRS_params = {'minsup': None, 'maxentr': None}
         # Default SGS configuration
         self.SGS_params = {'alg': 'gspan', 'edge_pruning': True, 'node_pruning': True, 'minsup': 0.01}
 
+    def setPRS_params(self, minsup=None, maxentr=None):
+        """
+        Overwrite default PRS configuration
+        Leave to None the parameters that you don't want to change.
+        :param minsup: minimum support of PRS histograms
+        :param maxentr: maximum entropy of PRS histograms
+        """
+        if minsup is not None:
+            self.PRS_params['minsup']=minsup
+        if maxentr is not None:
+            self.PRS_params['maxentr']=maxentr
+
     def setSGS_params(self, SGS_params):
         """
-        Change default SGS configuration
+        Overwrite default SGS configuration
         :param SGS_params: SGS configuration (dict: alg, edge_pruning, node_pruning, min_sup)
         """
         self.SGS_params = SGS_params
@@ -96,12 +110,17 @@ class SImS_config:
         :param entr_list: list of PRS entropies
         :return: min_sup, max_entr
         """
-        max_entropy = entropy([1 / 3, 1 / 3, 1 / 3])
-        med = np.median(np.log10(sup_list))
-        # Set minsup to median, if COCO dataset
-        if self.dataset == 'COCO' or self.dataset == 'COCO_subset' or self.dataset == 'COCO_subset2':
+
+        # Default minsup computation if not explicitly specified
+        min_sup = self.PRS_params['minsup']
+        if min_sup is None:
+            med = np.median(np.log10(sup_list))
             min_sup = int(round(10 ** med))
-        else:
-            min_sup = 20
+
+        # Default maxentropy computation if not explicitly specified
+        max_entropy = self.PRS_params['maxentr']
+        if max_entropy is None:
+            max_entropy = entropy([1 / 3, 1 / 3, 1 / 3])
+
         return min_sup, max_entropy
 

@@ -54,7 +54,7 @@ def main():
                    {'alg': 'gspan', 'edge_pruning': True, 'node_pruning': True, 'minsup': 0.001},  #10) 7s
                    {'alg': 'subdue', 'edge_pruning': True, 'node_pruning': True, 'nsubs': 10000},  #11) 17m
 
-                   {'alg': 'gspan', 'edge_pruning': True, 'node_pruning': True, 'minsup': 0.05} #12        (GOLD for COCO subset)
+                   {'alg': 'gspan', 'edge_pruning': True, 'node_pruning': True, 'minsup': 0.05} #12        (GOLD for COCO subset 2)
                    ]
 
     ### SETUP of the experiments ###
@@ -63,8 +63,11 @@ def main():
         experiment = experiments[RUN_CONFIG.experiment]
     else:
         experiment = experiments[int(sys.argv[1])]
-    # SImS configuration
+
+    # SImS configuration (dataset, PRS, SGS)
     config = SImS_config(RUN_CONFIG.dataset)
+    if RUN_CONFIG.dataset == 'VG':
+        config.setPRS_params(minsup=20)    # Minsup for Visual Genome
     config.setSGS_params(experiment)
 
 
@@ -79,7 +82,9 @@ def main():
 
         print(f"Selected experiment: {experiment} \non dataset {RUN_CONFIG.dataset}")
         start_time = datetime.now()
-        build_SGS(config)
+        build_SGS(config, overwrite_PRS_cache=True) # Write overwrite_cache = False to speed up results
+                                                # Attention: changes of minsup and maxentr for the PRS
+                                                # are not applied if you do not overwrite cached data.
         end_time = datetime.now()
         print('Duration: ' + str(end_time - start_time))
 
