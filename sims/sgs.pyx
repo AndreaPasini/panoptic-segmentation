@@ -134,7 +134,6 @@ def load_and_print_SGS(simsConf, subsample=True, pdfformat=True, alternate_color
     # Print graphs
     print_graphs(graphs, out_path, subsample, pdfformat, alternate_colors, clean_class_names)
 
-##############TODOOOOOOOOOOOOOO rinominare in pyx
 def load_and_print_SGS_images(simsConf):
     """
     Plot images associated to SGS graphs
@@ -169,4 +168,4 @@ def load_and_print_SGS_images(simsConf):
             selectedImgIndex = col['nNodes'].idxmin()
             selectedImg = input_graphs[selectedImgIndex]['graph']['name']
             imgName = getImageName(selectedImg, extension='jpg')
-            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}.jpg"))
+            copyfile(os.path.join(simsConf.img_dir, imgName), os.path.join(out_path, f"s_{g['sup']}_g{gid}_{selectedImg}.jpg"))
