@@ -10,9 +10,9 @@ pyximport.install(language_level=3)
 
 from datetime import datetime
 from sims.sims_config import SImS_config
-from sims.sgs_evaluation import evaluate_SGS, create_COCO_images_subset, create_COCO_images_subset2
+from sims.sgs_evaluation import evaluate_SGS, create_COCO_images_subset, create_COCO_images_subset2, \
+    compute_coverage_mat_sims
 from sims.sgs import build_SGS, load_and_print_SGS, load_and_print_SGS_images
-from sims.graph_algorithms import compute_coverage_mat
 import pandas as pd
 import sys
 import os
@@ -32,7 +32,9 @@ def main():
         compute_SGS = False           # Compute the Scene Graph Summary
         compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
         print_SGS_graphs = False      # Plot SGS scene graphs
-        print_SGS_images = True       # Plot images associated to SGS graphs
+        print_SGS_images = False       # Plot images associated to SGS graphs
+        pairing_method = 'img_max'    # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
+        # img_min, img_max, img_avg, std
 
         #4. Run final evaluation
         #experiment_list = [0, 3, 8, 10, 6, 11] # Experiments for whole COCO (paper)
@@ -91,7 +93,7 @@ def main():
     if RUN_CONFIG.compute_coverage_mat:
         # Check subgraph isomorphism of each frequent graph with COCO training images
         start_time = datetime.now()
-        compute_coverage_mat(config)
+        compute_coverage_mat_sims(config, RUN_CONFIG.pairing_method)
         end_time = datetime.now()
         print('Duration: ' + str(end_time - start_time))
 
@@ -108,7 +110,7 @@ def main():
 
     if RUN_CONFIG.print_SGS_images:
         print(f"Selected experiment: {experiment}")
-        load_and_print_SGS_images(config)
+        load_and_print_SGS_images(config, RUN_CONFIG.pairing_method)
 
     if RUN_CONFIG.evaluate_SGS_experiments:
         # Compute evaluation metrics for all the specified experimental configurations
@@ -120,7 +122,7 @@ def main():
                 selected_experiment = selected_experiment[0]
             print(f"Evaluating {experiments[selected_experiment]}...")
             config.setSGS_params(experiments[selected_experiment])
-            res = evaluate_SGS(config, topk)
+            res = evaluate_SGS(config, topk, RUN_CONFIG.pairing_method)
             results.append(res)
         print("Graph mining statistics.")
 
@@ -128,11 +130,13 @@ def main():
                                                 "Avg. nodes","Std. nodes",
                                                 "Coverage",
                                                 "Diversity"])
-
-
+        if RUN_CONFIG.pairing_method == 'std':
+            suffix = ""
+        else:
+            suffix = f"_{RUN_CONFIG.pairing_method}"
         # Print latex table
         print(res_df.to_latex(index=False))
-        res_df.to_csv(os.path.join(config.SGS_dir, 'evaluation.csv'))
+        res_df.to_csv(os.path.join(config.SGS_dir, f'evaluation{suffix}.csv'))
 
 if __name__ == '__main__':
     main()

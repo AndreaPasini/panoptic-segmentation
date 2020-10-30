@@ -110,8 +110,9 @@ def __read_subdue_output(file_name, obj_categories, rel_categories):
 
         # Convert networkx graphs to json
         final_graphs = []
-        for g, sup in graphs:
+        for i, (g, sup) in enumerate(graphs):
             res_graph = nx_to_json(g)
+            res_graph['graph']['name']=i
             final_graphs.append({'g': res_graph, 'sup': sup})
 
         return final_graphs

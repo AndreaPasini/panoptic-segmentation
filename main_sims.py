@@ -8,8 +8,7 @@ import pandas as pd
 from sims.prs import create_PRS
 from sims.sgs import build_SGS
 from sims.scene_graphs.position_classifier import create_scene_graphs
-from sims.sgs_evaluation import evaluate_SGS_df
-from sims.graph_algorithms import compute_coverage_mat
+from sims.sgs_evaluation import evaluate_SGS_df, compute_coverage_mat_sims
 from config import position_classifier_path
 from sims.scene_graphs.vgenome import create_scene_graphs_vg
 from sims.sims_config import SImS_config
@@ -34,7 +33,7 @@ if __name__ == "__main__":
     # Build SGS (about 10 seconds for COCO)
     build_SGS(config)
     # Compute coverage matrix (for computing coverage and diversity)
-    compute_coverage_mat(config)
+    compute_coverage_mat_sims(config)
     # Run evaluation
     print(evaluate_SGS_df(config).to_latex(index=False))
     end_time = datetime.now()

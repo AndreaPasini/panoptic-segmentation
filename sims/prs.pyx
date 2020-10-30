@@ -121,6 +121,33 @@ def filter_PRS_histograms(prs, min_sup, max_entropy):
     """
     return {pair : h for pair, h in prs.items() if h['sup'] >= min_sup and h['entropy'] <= max_entropy}
 
+def get_sup_ent_lists(prs):
+    """
+    Get support and entropy values in two lists, from the PRS (json format)
+    :param prs: pairwise relationship summary (read from json)
+    """
+    sup = [h['sup'] for h in prs.values()]
+    ent = [h['entropy'] for h in prs.values()]
+    return sup, ent
+
+def load_PRS(config, filtering=False):
+    """
+    Load pairwise relationship summary (PRS) specified by the given configuration.
+    :param config: SImS_config configuration class
+    :param filtering: True if you want to apply PRS filtering (minsup, maxentr),
+                      with the threshold values specified in the configuration
+    :return: list of output PRS histograms
+    """
+    with open(config.PRS_json_path) as f:
+        prs = json.load(f)
+
+    if filtering:
+        sup, entr = get_sup_ent_lists(prs)
+        min_sup, max_entropy = config.get_PRS_filters(sup, entr)
+        prs = filter_PRS_histograms(prs, min_sup, max_entropy)
+
+    return prs
+
 def get_likelihood(nodes_map, link, prs):
     """
     Retrieve from the PRS the likelihood of this link
@@ -143,15 +170,6 @@ def get_likelihood(nodes_map, link, prs):
             return 0, hist
     return None, None
 
-
-def get_sup_ent_lists(prs):
-    """
-    Get support and entropy values in two lists, from the PRS (json format)
-    :param prs: pairwise relationship summary (read from json)
-    """
-    sup = [h['sup'] for h in prs.values()]
-    ent = [h['entropy'] for h in prs.values()]
-    return sup, ent
 
 def clean_histogram(h, top_n=None):
     """

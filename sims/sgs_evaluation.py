@@ -1,6 +1,6 @@
 import pyximport
 
-from sims.graph_algorithms import compute_diversity
+from sims.graph_algorithms import compute_diversity, compute_coverage_matrix
 
 pyximport.install(language_level=3)
 from panopticapi.utils import read_train_img_captions
@@ -9,27 +9,89 @@ from scipy.stats import entropy
 import json
 from config import COCO_PRS_json_path, COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, \
     COCO_train_graphs_subset2_json_path, COCO_SGS_dir
-from sims.prs import filter_PRS_histograms
-from sims.sgs import load_sgs
+from sims.prs import filter_PRS_histograms, load_PRS, edge_pruning, node_pruning
+from sims.sgs import load_SGS, SGS_to_represented_imgs, prepare_graphs_with_PRS, SGS_to_represented_img_graphs
 import numpy as np
 import os
 import pandas as pd
 
-def evaluate_SGS(simsConf, topk=None):
+
+def compute_coverage_mat_sims(config, method):
+    """
+    Use this function to evaluate SImS coverage.
+
+    Compute the coverage matrix for a given summary (SGS) with respect to the input collection.
+    Each row is associated to one of the collection graphs (e.g., g_i).
+    Every element in the row counts the number of occurrences of each summary graph inside g_i.
+
+    Important: with method="std" the result matrix only includes SGS graphs with >=2 nodes.
+
+    :param config: experiment configuration (SImS_config class)
+    :param method: "std" - standard evaluation: use frequent graphs in the SGS for subgraph isomorphism
+                   "img_min"/"img_max"/"img_avg" - evaluation using image pairing.
+                            in this case it pairs an image to each SGS graph with the method min/max/avg
+                            then filters the scene graph with edge+node pruning
+                            finally computes coverage and diversity on the filtered graph
+    """
+    experiment_name = config.getSGS_experiment_name()
+    if method=='std':
+        suffix = ""
+    else:
+        suffix = '_'+method
+    output_file = os.path.join(config.SGS_dir, f"coverage_mat_{experiment_name}{suffix}.csv")
+
+    # Read input collection
+    tmp = config.SGS_params
+    #config.SGS_params['edge_pruning']=True
+    #config.SGS_params['node_pruning']=True # This speeds up process.
+    input_graphs_filtered = prepare_graphs_with_PRS(config)
+    config.SGS_params=tmp
+
+    if method!='std':
+        represented_imgs, sgs = SGS_to_represented_imgs(config, method)
+        summary_graphs = SGS_to_represented_img_graphs(config, represented_imgs, sgs)
+    else:
+        summary_graphs = load_SGS(config, min_nodes=2) # Read frequent graphs, only those with >=2 nodes
+
+    print("Computing coverage matrix...")
+    cmatrix = compute_coverage_matrix(input_graphs_filtered, summary_graphs)
+    cmatrix.to_csv(output_file, sep=",", index=False)
+
+def evaluate_SGS(simsConf, topk=None, method='std'):
     """
     Evaluate SImS SGS.
     Compute statistics (avg. nodes, distinct classes, ...) on the extracted frequent subgraphs.
     :param simsConf: experimental configuration class
     :param topk: number of top-k frequent graphs to be considered for the evaluation
+    :param method: "std" - standard evaluation: use frequent graphs in the SGS
+                   "img_min"/"img_max"/"img_avg" - image evaluation.
+                            in this case it pairs an image to each SGS graph with the method min/max/avg
+                            then filters the scene graph with edge+node pruning
+                            finally computes coverage and diversity on the filtered graph
     :return: dictionary with statistics
     """
-    # Read frequent graphs
-    sgs_graphs = load_sgs(simsConf)
+
+    if method!='std':
+        suffix = f"_{method}"
+    else:
+        suffix = ""
+
+    # Read SGS summary. Only graphs with >=2 nodes
+    sgs = load_SGS(simsConf, min_nodes=2)
     # Read coverage matrix
     coverage_mat = pd.read_csv(os.path.join(simsConf.SGS_dir,
-                               "coverage_mat_" + simsConf.getSGS_experiment_name() + ".csv"),
+                               f"coverage_mat_{simsConf.getSGS_experiment_name()}{suffix}.csv"),
                                index_col=None)
-    res =  evaluate_summary_graphs(sgs_graphs, coverage_mat, topk)
+
+    # Read frequent graphs (consider only graphs with at least 2 nodes)
+    if method!='std':
+        represented_imgs = [(int(img.split('_')[1])) for img in coverage_mat.columns]
+        summary_graphs = SGS_to_represented_img_graphs(simsConf, represented_imgs, sgs)
+    else:
+        summary_graphs = sgs
+
+
+    res =  evaluate_summary_graphs(summary_graphs, coverage_mat, topk)
     config = simsConf.SGS_params
     if 'minsup' not in config:
         config['minsup'] = None
@@ -61,12 +123,6 @@ def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
     :return: dictionary with statistics
     """
 
-    for i, g in enumerate(summary_graphs):
-        g['id'] = i
-
-    # Pick graphs with>2 nodes
-    summary_graphs = [g for g in summary_graphs if len(g['g']['nodes']) >= 2]
-
     # Pick top-k graphs
     if topk is not None:
         # Sort graphs by support
@@ -86,7 +142,9 @@ def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
         nodes_set = set(nodes)
         tot_dist_nodes += len(nodes_set)                # Number of distinct classes
         max_dist_nodes = max(max_dist_nodes, len(nodes_set)) # Max n. distinct classes
-        nodes_nodes_dist += len(nodes_set)/len(nodes)
+        if len(nodes)>0:
+            nodes_nodes_dist += len(nodes_set)/len(nodes)
+
         # Add
         for n in nodes_set:                             # Track distinct classes
             if n in dist_classes:
@@ -102,7 +160,7 @@ def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
 
     # Compute coverage
     if topk:    # Select only topk graphs
-        ids = [str(g['id']) for g in summary_graphs]
+        ids = [str(g['g']['graph']['name']) for g in summary_graphs]
         coverage_mat = coverage_mat[ids]
     covered = (coverage_mat.sum(axis=1) > 0).sum()
     coverage = covered / len(coverage_mat)
@@ -204,3 +262,5 @@ def create_COCO_images_subset2():
     with open(COCO_train_graphs_subset2_json_path, 'w') as f:
         json.dump(all_graphs, f)
     print("Done.")
+
+

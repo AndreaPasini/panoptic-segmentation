@@ -1,9 +1,10 @@
 
 import pyximport
-
-from sims.scene_graphs.image_processing import getImageName
-
 pyximport.install(language_level=3)
+
+
+from sims.prs import edge_pruning, filter_PRS_histograms, get_sup_ent_lists, node_pruning, load_PRS
+from sims.scene_graphs.image_processing import getImageName
 from shutil import copyfile
 import cv2
 import os
@@ -19,7 +20,7 @@ from datetime import datetime
 import json
 from pyclustering.cluster.kmedoids import kmedoids
 from tqdm import tqdm
-from sims.graph_algorithms import get_isomorphism_count_vect
+from sims.graph_algorithms import get_isomorphism_count_vect, compute_coverage_matrix
 from sims.sgs_evaluation import evaluate_summary_graphs
 from sims.sims_config import SImS_config
 from sims.visualization import print_graphs
@@ -180,33 +181,19 @@ def get_kmedoids_graphs(kmedoids_result, scene_graphs):
         kmedoids_graphs[k] = kmedoids_graphs_i
     return kmedoids_graphs
 
-
-def compute_coverage(summary, collection):
-    """
-
-    :param summary: list of summary graphs
-    :param collection: list of graphs in the initial collection
-    :return:
-    """
-    summary = [{'g':s} for s in summary]
-
-    pbar = tqdm(total=len(collection))
-    cmatrix = []
-    for g in collection:
-        vect = get_isomorphism_count_vect(g, summary)
-        cmatrix.append(vect)
-        pbar.update()
-    cmatrix = pd.DataFrame(cmatrix)
-    pbar.close()
-    return cmatrix
-
 if __name__ == "__main__":
     class RUN_CONFIG:
         compute_BOW_descriptors = False # Map each COCO image to its BOW descriptors
         run_kmedoids = False             # Run KMedoids summary for different k values
-        print_kmedoids_graphs = True   # Print scene graphs of selected kmedoids images (for each k)
+        print_kmedoids_graphs = False   # Print scene graphs of selected kmedoids images (for each k)
+
+        use_full_graphs = False         # True if you want to compute coverage on full graphs
+                                        # False to apply node and edge pruning before computing coverage
+        pairing_method = 'img_max'  # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
+                                     # img_min, img_max, img_avg, std
+
         compute_kmedoids_coverage_matrix = False # Compute graph coverage matrix for kmedoids
-        compute_coverage = False  # Use coverage matrix to compute graph coverage
+        compute_coverage = True  # Use coverage matrix to compute graph coverage
 
         #dataset = 'COCO_subset'     # Choose dataset
         dataset = 'COCO_subset2'
@@ -273,16 +260,29 @@ if __name__ == "__main__":
             coco_graphs = json.load(f)
         kmedoids_graphs = get_kmedoids_graphs(kmedoids_result, coco_graphs)
 
+        # Load pairwise relationship summary (PRS) if needed
+        if RUN_CONFIG.use_full_graphs==False:
+            prs = load_PRS(config, True)
+
         cmatrices_list = []
         for k, summary_graphs_i in kmedoids_graphs.items():
-            cmatrix = compute_coverage(summary_graphs_i, coco_graphs)
+            if RUN_CONFIG.use_full_graphs == False:
+                summary_graphs_i = edge_pruning(prs, summary_graphs_i)
+                summary_graphs_i = node_pruning(summary_graphs_i)
+
+            cmatrix = compute_coverage_matrix(coco_graphs, [{'g':s} for s in summary_graphs_i])
+            cmatrix.columns = list(range(int(k)))
             cmatrix['k'] = k
             #cmatrix.insert(0, 'k', k)
             cmatrices_list.append(cmatrix)
+
         cmatrices = pd.concat(cmatrices_list, sort=True)
         cmatrices.set_index('k', inplace=True)
         cmatrices.index.name = 'k'
-        output_file = os.path.join(output_path, "coverage_mat.csv")
+        if RUN_CONFIG.use_full_graphs:
+            output_file = os.path.join(output_path, "coverage_mat_full.csv")
+        else:
+            output_file = os.path.join(output_path, "coverage_mat_pruned.csv")
         cmatrices.to_csv(output_file, sep=",")
 
     if RUN_CONFIG.compute_coverage:
@@ -294,10 +294,25 @@ if __name__ == "__main__":
         with open(config.scene_graphs_json_path, 'r') as f:
             coco_graphs = json.load(f)
         kmedoids_graphs = get_kmedoids_graphs(kmedoids_result, coco_graphs)
-        cmatrices = pd.read_csv(os.path.join(output_path, "coverage_mat.csv"), index_col='k')
+
+        if RUN_CONFIG.use_full_graphs==False:
+            suffix = "_pruned"
+            suffix2=f"_{RUN_CONFIG.pairing_method}"
+        else:
+            suffix = "_full"
+            suffix2 = ""
+        cmatrices = pd.read_csv(os.path.join(output_path, f"coverage_mat{suffix}.csv"), index_col='k')
+
+        # Load pairwise relationship summary (PRS) if needed
+        if RUN_CONFIG.use_full_graphs==False:
+            prs = load_PRS(config, True)
 
         results = []
         for k, summary_graphs_i in kmedoids_graphs.items():
+            if RUN_CONFIG.use_full_graphs == False:
+                summary_graphs_i = edge_pruning(prs, summary_graphs_i)
+                summary_graphs_i = node_pruning(summary_graphs_i)
+
             res = evaluate_summary_graphs([{'g':s} for s in summary_graphs_i], cmatrices.loc[int(k)].iloc[:,:int(k)])
             results.append(res)
 
@@ -305,7 +320,8 @@ if __name__ == "__main__":
                                                 "Avg. nodes", "Std. nodes",
                                                 "Coverage",
                                                 "Diversity"])
-        sims_df = pd.read_csv(os.path.join(config.SGS_dir, 'evaluation.csv'), index_col=0)
+
+        sims_df = pd.read_csv(os.path.join(config.SGS_dir, f'evaluation{suffix2}.csv'), index_col=0)
 
         fig, ax = plt.subplots(1,2, figsize=[9,3])
         ax[0].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Coverage'], label='SImS',
@@ -327,7 +343,7 @@ if __name__ == "__main__":
         ax[1].grid(axis='y')
         ax[1].legend(bbox_to_anchor=(1.6, 0.4), loc="lower right")
         plt.tight_layout()
-        plt.savefig(os.path.join(output_path, 'evaluation.eps'), bbox_inches='tight')
+        plt.savefig(os.path.join(output_path, f'evaluation{suffix2}.eps'), bbox_inches='tight')
 
         fig, ax = plt.subplots(1,2, figsize=[8,3], sharey=True)
         ax[0].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Coverage'], label='KMedoids',
@@ -338,7 +354,7 @@ if __name__ == "__main__":
         ax[0].xaxis.set_major_locator(MaxNLocator(integer=True))
         #ax[0].set_ylabel('coverage')
         ax[0].grid(axis='y')
-        ax[0].set_title('SImS')
+        ax[0].set_title('KMedoids')
         ax[0].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Diversity'], label='KMedoids',
                    marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
         ax[1].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Diversity'], label='Diversity',
@@ -348,6 +364,6 @@ if __name__ == "__main__":
         #ax[1].set_ylabel('diversity')
         ax[1].grid(axis='y')
         ax[1].legend(bbox_to_anchor=(1.6, 0.4), loc="lower right")
-        ax[1].set_title('KMedoids')
+        ax[1].set_title('SImS')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_path, 'evaluation2.eps'), bbox_inches='tight')
+        plt.savefig(os.path.join(output_path, f'evaluation2{suffix2}.eps'), bbox_inches='tight')

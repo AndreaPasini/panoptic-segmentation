@@ -13,7 +13,7 @@ from sims.graph_utils import json_to_nx, print_graph_picture
 
 
 
-from sims.sgs import load_sgs, print_graphs, load_and_print_fgraphs, prepare_graphs_with_PRS
+from sims.sgs import load_SGS, print_graphs, load_and_print_fgraphs, prepare_graphs_with_PRS
 from sims.sims_config import SImS_config
 import pandas as pd
 import numpy as np
@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     if RUN_CONFIG.print_maximal:
         # Read frequent graphs, given configuration
-        fgraphs = load_sgs(config)
+        fgraphs = load_SGS(config)
         maximal_fgraphs = get_maximal_itemsets(fgraphs)
         out_path = os.path.join(config.SGS_dir,'charts/maximal')
         if not os.path.exists(out_path):
@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
     if RUN_CONFIG.associate_places:
         # Read frequent graphs, given configuration
-        fgraphs = load_sgs(config)
+        fgraphs = load_SGS(config)
         maximal_fgraphs = get_maximal_itemsets(fgraphs)
         conceptnet = Conceptnet()
 

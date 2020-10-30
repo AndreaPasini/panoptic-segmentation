@@ -8,7 +8,7 @@ from tqdm import tqdm
 import copy
 from networkx.algorithms.isomorphism import categorical_node_match, categorical_edge_match, DiGraphMatcher
 from sims.graph_utils import json_to_nx
-from sims.sgs import prepare_graphs_with_PRS, load_sgs
+
 
 def subgraph_isomorphism(subgraph, graph, induced=False):
     """
@@ -69,17 +69,22 @@ def subgraph_isomorphism(subgraph, graph, induced=False):
         return []
 
 
-def get_isomorphism_count_vect(graph, sgs_graphs):
+def get_isomorphism_count_vect(graph, sgs_graphs, min_nodes=2):
     """
-    Associate a json graph to the frequent graphs (sub-graph isomorphism).
-    Obtain a count-vector with the number of found instances for each frequent graph
+    Return a count-vector with shape [len(sgs_graphs)].
+    For each SGS graph it performs sub-graph isomorphism with respect to the input graph.
+    Each element in the vector counts the number of occurrences of an SGS graph inside the input graph.
     :param graph: json graph
-    :param sgs_graphs: frequent graphs in the SGS
+    :param sgs_graphs: list of graphs in the SGS
+    :param min_nodes: minimum number of nodes for a graph to be considered.
+                If the condition is not satisfied, the SGS graph has 0 coverage for all the
+                collection graphs (e.g. column with all 0).
     :return: the count-vector (Numpy) with the number of found instances for each SGS graph
     """
     cvector = np.zeros(len(sgs_graphs))
     g_nodes = {n['label'] for n in graph['nodes']}
     for i, fgraph in enumerate(sgs_graphs):
+        if len(fgraph['g']['nodes']) >= min_nodes: # No coverage if min nodes not satisfied
             # Sub-graph isomorphism
             fg_nodes = {n['label'] for n in fgraph['g']['nodes']}
             if len(fg_nodes - g_nodes) == 0:
@@ -87,43 +92,32 @@ def get_isomorphism_count_vect(graph, sgs_graphs):
                 cvector[i] += len(match_list)
     return cvector
 
-
-def compute_coverage_mat(config):
+def compute_coverage_matrix(collection_graphs, sgs_graphs, min_nodes=2):
     """
-    Given an SGS experimental configuration, associate training COCO images to SGS graphs.
-    Important: in the result considers only SGS graphs with >=2 nodes.
-    Result is a count matrix saved to a csv file (1 row for each image, 1 column for each SGS graph)
-    :param config: experiment configuration (SImS_config class)
+    Compute the coverage matrix for a given summary (SGS) with respect to the input collection.
+    Each row is associated to one of the collection graphs (e.g., g_i).
+    Every element in the row counts the number of occurrences of each SGS graph inside g_i.
+
+    :param collection_graphs: list of graphs in the initial collection
+    :param sgs_graphs: list of summary graphs
+    :param min_nodes: minimum number of nodes for a graph to be considered.
+                    Default 2 (i.e., empty graphs and single-node graphs are not considered
+                    since they are too generic).
+                    If the condition is not satisfied, the SGS graph has 0 coverage for all the
+                    collection graphs (e.g. column with all 0).
+    :return: coverage matrix (pandas DataFrame)
     """
-    experiment_name = config.getSGS_experiment_name()
-    output_file = os.path.join(config.SGS_dir, "coverage_mat_"+experiment_name+".csv")
-
-    # Read training graphs
-    tmp = config.SGS_params
-    #config.SGS_params['edge_pruning']=True
-    #config.SGS_params['node_pruning']=True # This speeds up process.
-    train_graphs_filtered = prepare_graphs_with_PRS(config)
-    config.SGS_params=tmp
-
-
-    # Read frequent graphs
-    sgs_graphs = load_sgs(config)
-    pbar = tqdm(total=len(train_graphs_filtered))
+    g_ids = [g['g']['graph']['name'] for g in sgs_graphs]
     cmatrix = []
-    # Subgraph isomorphism to match frequent graphs with COCO train graphs
-    g_ids = []
-    filtered_sgs = []
-    for i, g in enumerate(sgs_graphs):
-        if len(g['g']['nodes']) >= 2:
-            g_ids.append(i)
-            filtered_sgs.append(g)
-    for g in train_graphs_filtered:
-            # Important: at least "2 nodes" to be considered.
-            cmatrix.append(get_isomorphism_count_vect(g, filtered_sgs))
-            pbar.update()
+    pbar = tqdm(total=len(collection_graphs))
+
+    for g in collection_graphs:
+        cmatrix.append(get_isomorphism_count_vect(g, sgs_graphs, min_nodes))
+        pbar.update()
     pbar.close()
     cmatrix = pd.DataFrame(cmatrix, columns=g_ids)
-    cmatrix.to_csv(output_file, sep=",", index=False)
+    return cmatrix
+
 
 def compute_diversity(sgs_graphs):
     """
@@ -131,6 +125,13 @@ def compute_diversity(sgs_graphs):
     :param sgs_graphs: list of the SGS json graphs
     :return: diversity score (float)
     """
+
+    if len(sgs_graphs)==1:
+        if len(sgs_graphs[0]['g']['nodes'])>0:
+            return 1   # 1 graph, with at least 1 node. Diversity=1
+        else:
+            return 0   # 1 empty graph. Diversity=0
+
     node_sets = []
     for g in sgs_graphs:
         node_sets.append({n['label'] for n in g['g']['nodes']})
@@ -141,9 +142,14 @@ def compute_diversity(sgs_graphs):
         for j in range(i+1, len(node_sets)):
             ni = node_sets[i]
             nj = node_sets[j]
+            n+=1 # Count this pair
+
+            # Distance between a void node and a non-void node is 0
+            if len(ni)==0 or len(nj)==0:
+                continue
+
             intersect = ni & nj
             union = ni | nj
             distances += 1-len(intersect)/len(union)
-            n+=1
 
     return distances/n

@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from config import trainimage_freqgraph_csv_path, freqgraph_place_csv_path, trainimage_place_csv_path
 from sims.conceptnet.places import Conceptnet
-from sims.sgs import load_sgs
+from sims.sgs import load_SGS
 
 # def subgraph_isomorphism(subgraph, graph):
 #     """
@@ -30,7 +30,7 @@ def compute_freqgraph_place_count_mat(experiment):
     :param experiment: experiment configuration (dictionary)
     """
     # Read frequent graphs
-    freq_graphs = load_sgs(experiment)
+    freq_graphs = load_SGS(experiment)
     # Read conceptnet
     conceptnet = Conceptnet()
     cmatrix = []
