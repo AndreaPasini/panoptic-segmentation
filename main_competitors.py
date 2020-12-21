@@ -157,7 +157,7 @@ def kmedoids_summary(X, k):
     """
     km = kmedoids(X.to_numpy(), np.random.randint(0,len(X), k))
     start_time = datetime.now()
-    print("Start clustering process.")
+    print(f"Start clustering process k={k}.")
     km.process()
     med = km.get_medoids()
     end_time = datetime.now()
@@ -228,6 +228,7 @@ if __name__ == "__main__":
         X = read_BOW_images(RUN_CONFIG.dataset)
         res = {}
         avg_time = 0
+        print(f"Number of images: {len(X)}")
         for k in range(RUN_CONFIG.mink, RUN_CONFIG.maxk+1):
             medoids, duration = kmedoids_summary(X, k)
             res[k] = (medoids, duration.seconds)
