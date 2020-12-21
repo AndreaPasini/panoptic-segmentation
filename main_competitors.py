@@ -196,11 +196,12 @@ if __name__ == "__main__":
         compute_coverage = True  # Use coverage matrix to compute graph coverage
 
         #dataset = 'COCO_subset'     # Choose dataset
-        dataset = 'COCO_subset2'
+        #dataset = 'COCO_subset2'
+        dataset = 'COCO_subset3'
         if dataset == 'COCO_subset':
             mink = 4                        # Min value of k to test kmedoids
             maxk = 20                       # Max value of k to test kmedoids
-        elif dataset == 'COCO_subset2':
+        elif dataset == 'COCO_subset2' or dataset == 'COCO_subset3':
             mink = 2
             maxk = 20
 
