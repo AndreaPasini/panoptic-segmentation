@@ -25,13 +25,13 @@ def main():
         #2. Choose a dataset
         #dataset = 'COCO'
         #dataset = 'COCO_subset' # Experiment with only 4 COCO scenes (for paper comparisons)
-        dataset = 'COCO_subset2' # Experiment with images selected by COCO caption (driving skiing)
+        #dataset = 'COCO_subset2' # Experiment with images selected by COCO caption (driving skiing)
         dataset = 'COCO_subset3'  # Experiment with images selected by COCO caption (garden, church)
         # dataset = 'VG'
 
         #3. Run one of the following options
         compute_SGS = True           # Compute the Scene Graph Summary
-        compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
+        compute_coverage_mat = True  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
         print_SGS_graphs = True      # Plot SGS scene graphs
         print_SGS_images = True       # Plot images associated to SGS graphs
         pairing_method = 'img_min'    # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
