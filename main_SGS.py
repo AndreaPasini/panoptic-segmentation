@@ -96,6 +96,10 @@ def main():
     if RUN_CONFIG.compute_coverage_mat:
         # Check subgraph isomorphism of each frequent graph with COCO training images
         start_time = datetime.now()
+        if RUN_CONFIG.pairing_method!='std':   # You need standard coverage matrix for the other methods
+            if not os.path.exists(os.path.join(config.SGS_dir, f"coverage_mat_{config.getSGS_experiment_name()}.csv")):
+                compute_coverage_mat_sims(config, 'std')
+            
         compute_coverage_mat_sims(config, RUN_CONFIG.pairing_method)
         end_time = datetime.now()
         print('Duration: ' + str(end_time - start_time))
