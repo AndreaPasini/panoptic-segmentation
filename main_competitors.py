@@ -201,7 +201,7 @@ if __name__ == "__main__":
     class RUN_CONFIG:
         compute_BOW_descriptors = False # Map each COCO image to its BOW descriptors
         run_kmedoids = False             # Run KMedoids summary for different k values
-        print_kmedoids_graphs = True   # Print scene graphs of selected kmedoids images (for each k)
+        print_kmedoids_graphs = False   # Print scene graphs of selected kmedoids images (for each k)
 
         use_full_graphs = False         # True if you want to compute coverage on full graphs
                                         # False to apply node and edge pruning before computing coverage
