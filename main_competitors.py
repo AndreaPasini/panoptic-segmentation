@@ -19,7 +19,7 @@ from joblib import dump, load
 import pandas as pd
 from datetime import datetime
 import json
-from pyclustering.cluster.kmedoids import kmedoids
+
 from tqdm import tqdm
 from sims.graph_algorithms import get_isomorphism_count_vect, compute_coverage_matrix
 from sims.sgs_evaluation import evaluate_summary_graphs, create_COCO_images_subset, create_COCO_images_subset3, \
@@ -163,6 +163,7 @@ def kmedoids_summary(X, k):
     :param k: number of clusters
     :return: list of image names for the selected medoids
     """
+    from pyclustering.cluster.kmedoids import kmedoids
     km = kmedoids(X.to_numpy(), np.random.randint(0,len(X), k))
     start_time = datetime.now()
     print(f"Start clustering process k={k}.")
@@ -199,7 +200,7 @@ def get_kmedoids_graphs(kmedoids_result, scene_graphs):
 if __name__ == "__main__":
     class RUN_CONFIG:
         compute_BOW_descriptors = False # Map each COCO image to its BOW descriptors
-        run_kmedoids = True             # Run KMedoids summary for different k values
+        run_kmedoids = False             # Run KMedoids summary for different k values
         print_kmedoids_graphs = True   # Print scene graphs of selected kmedoids images (for each k)
 
         use_full_graphs = False         # True if you want to compute coverage on full graphs
