@@ -22,7 +22,8 @@ import json
 from pyclustering.cluster.kmedoids import kmedoids
 from tqdm import tqdm
 from sims.graph_algorithms import get_isomorphism_count_vect, compute_coverage_matrix
-from sims.sgs_evaluation import evaluate_summary_graphs
+from sims.sgs_evaluation import evaluate_summary_graphs, create_COCO_images_subset, create_COCO_images_subset3, \
+    create_COCO_images_subset2
 from sims.sims_config import SImS_config
 from sims.visualization import print_graphs
 from sims.graph_algorithms import compute_diversity
@@ -135,13 +136,20 @@ def read_BOW_images(dataset='COCO_subset'):
         # Select experiment images
         if dataset == 'COCO_subset':
             input_path = COCO_train_graphs_subset_json_path
+            if not os.path.exists(input_path):
+                create_COCO_images_subset()
         elif dataset == 'COCO_subset2':
             input_path = COCO_train_graphs_subset2_json_path
+            if not os.path.exists(input_path):
+                create_COCO_images_subset2()
         elif dataset == 'COCO_subset3':
             input_path = COCO_train_graphs_subset3_json_path
+            if not os.path.exists(input_path):
+                create_COCO_images_subset3()
         else:
             print(f"Dataset {dataset} not recognized")
             exit()
+
 
         with open(input_path) as f:
             graphs = json.load(f)
