@@ -11,7 +11,8 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 
-from config import COCO_img_train_dir, COCO_train_graphs_subset_json_path, COCO_train_graphs_subset2_json_path
+from config import COCO_img_train_dir, COCO_train_graphs_subset_json_path, COCO_train_graphs_subset2_json_path, \
+    COCO_train_graphs_subset3_json_path
 import numpy as np
 from sklearn.cluster import KMeans
 from joblib import dump, load
@@ -134,8 +135,14 @@ def read_BOW_images(dataset='COCO_subset'):
         # Select experiment images
         if dataset == 'COCO_subset':
             input_path = COCO_train_graphs_subset_json_path
-        else:
+        elif dataset == 'COCO_subset2':
             input_path = COCO_train_graphs_subset2_json_path
+        elif dataset == 'COCO_subset3':
+            input_path = COCO_train_graphs_subset3_json_path
+        else:
+            print(f"Dataset {dataset} not recognized")
+            exit()
+
         with open(input_path) as f:
             graphs = json.load(f)
         selected_names = [f"{g['graph']['name']:012d}.jpg" for g in graphs]
