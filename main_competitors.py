@@ -339,7 +339,12 @@ if __name__ == "__main__":
                                                 "Coverage",
                                                 "Diversity"])
 
-        sims_df = pd.read_csv(os.path.join(config.SGS_dir, f'evaluation{suffix2}.csv'), index_col=0)
+        sims_eval_path = os.path.join(config.SGS_dir, f'evaluation{suffix2}.csv')
+        if not os.path.exists(sims_eval_path):
+            print("You have to evaluate SImS first. Run main_SGS.py with evaluate_SGS_experiments=True")
+            exit()
+        else:
+            sims_df = pd.read_csv(sims_eval_path, index_col=0)
 
         fig, ax = plt.subplots(1,2, figsize=[9,3])
         ax[0].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Coverage'], label='SImS',

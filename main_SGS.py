@@ -30,17 +30,17 @@ def main():
         # dataset = 'VG'
 
         #3. Run one of the following options
-        compute_SGS = True           # Compute the Scene Graph Summary
-        compute_coverage_mat = True  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
-        print_SGS_graphs = True      # Plot SGS scene graphs
-        print_SGS_images = True       # Plot images associated to SGS graphs
+        compute_SGS = False           # Compute the Scene Graph Summary
+        compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
+        print_SGS_graphs = False      # Plot SGS scene graphs
+        print_SGS_images = False       # Plot images associated to SGS graphs
         pairing_method = 'img_min'    # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
         # img_min, img_max, img_avg, std
 
         #4. Run final evaluation
         #experiment_list = [0, 3, 8, 10, 6, 11] # Experiments for whole COCO (paper)
         experiment_list = [(12, i) for i in range(2, 21)] # Experiment for COCO subset1 and subset2
-        evaluate_SGS_experiments = False # Plot table with evaluation for SGS configurations in experiment_list
+        evaluate_SGS_experiments = True # Plot table with evaluation for SGS configurations in experiment_list
 
     # Experiment configuration
     experiments = [
