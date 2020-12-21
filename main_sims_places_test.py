@@ -6,14 +6,13 @@ pyximport.install(language_level=3)
 from networkx.algorithms.isomorphism import categorical_node_match, DiGraphMatcher, categorical_edge_match
 from tqdm import tqdm
 
-from config import graph_clustering_dir, trainimage_freqgraph_csv_path
+
 from sims.conceptnet.places import Conceptnet
-from sims.graph_clustering import compute_image_freqgraph_count_mat
 from sims.graph_utils import json_to_nx, print_graph_picture
 
 
 
-from sims.sgs import load_SGS, print_graphs, load_and_print_fgraphs, prepare_graphs_with_PRS
+#from sims.sgs import load_SGS, print_graphs, load_and_print_fgraphs, prepare_graphs_with_PRS
 from sims.sims_config import SImS_config
 import pandas as pd
 import numpy as np

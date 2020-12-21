@@ -189,7 +189,7 @@ if __name__ == "__main__":
 
         use_full_graphs = False         # True if you want to compute coverage on full graphs
                                         # False to apply node and edge pruning before computing coverage
-        pairing_method = 'img_max'  # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
+        pairing_method = 'img_min'  # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
                                      # img_min, img_max, img_avg, std
 
         compute_kmedoids_coverage_matrix = False # Compute graph coverage matrix for kmedoids
@@ -328,7 +328,7 @@ if __name__ == "__main__":
                    marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
         ax[0].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Coverage'], label='KMedoids',
                    marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
-        ax[0].set_xlabel('# graphs')
+        ax[0].set_xlabel('# graphs (k)')
         ax[0].xaxis.set_major_locator(MaxNLocator(integer=True))
         ax[0].set_ylabel('coverage')
         ax[0].grid(axis='y')
@@ -337,7 +337,7 @@ if __name__ == "__main__":
         ax[1].plot(np.arange(RUN_CONFIG.mink,RUN_CONFIG.maxk + 1), kmed_df['Diversity'], label='KMedoids',
                    marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
 
-        ax[1].set_xlabel('# graphs')
+        ax[1].set_xlabel('# graphs (k)')
         ax[1].xaxis.set_major_locator(MaxNLocator(integer=True))
         ax[1].set_ylabel('diversity')
         ax[1].grid(axis='y')
@@ -350,7 +350,7 @@ if __name__ == "__main__":
                    marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
         ax[1].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Coverage'], label='Coverage',
                    marker='o', markersize='4', color='#1f78b4', markerfacecolor='#a6cee3')
-        ax[0].set_xlabel('# graphs')
+        ax[0].set_xlabel('# graphs (k)')
         ax[0].xaxis.set_major_locator(MaxNLocator(integer=True))
         #ax[0].set_ylabel('coverage')
         ax[0].grid(axis='y')
@@ -359,7 +359,7 @@ if __name__ == "__main__":
                    marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
         ax[1].plot(np.arange(RUN_CONFIG.mink, RUN_CONFIG.maxk + 1), sims_df.loc[sims_df['N. graphs'] >= RUN_CONFIG.mink]['Diversity'], label='Diversity',
                    marker='o', markersize='4', color='#33a02c', markerfacecolor='#b2df8a')
-        ax[1].set_xlabel('# graphs')
+        ax[1].set_xlabel('# graphs (k)')
         ax[1].xaxis.set_major_locator(MaxNLocator(integer=True))
         #ax[1].set_ylabel('diversity')
         ax[1].grid(axis='y')

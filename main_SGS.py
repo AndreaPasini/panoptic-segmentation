@@ -11,7 +11,7 @@ pyximport.install(language_level=3)
 from datetime import datetime
 from sims.sims_config import SImS_config
 from sims.sgs_evaluation import evaluate_SGS, create_COCO_images_subset, create_COCO_images_subset2, \
-    compute_coverage_mat_sims
+    create_COCO_images_subset3, compute_coverage_mat_sims
 from sims.sgs import build_SGS, load_and_print_SGS, load_and_print_SGS_images
 import pandas as pd
 import sys
@@ -25,15 +25,16 @@ def main():
         #2. Choose a dataset
         #dataset = 'COCO'
         #dataset = 'COCO_subset' # Experiment with only 4 COCO scenes (for paper comparisons)
-        dataset = 'COCO_subset2' # Experiment with images selected by COCO caption
+        dataset = 'COCO_subset2' # Experiment with images selected by COCO caption (driving skiing)
+        dataset = 'COCO_subset3'  # Experiment with images selected by COCO caption (garden, church)
         # dataset = 'VG'
 
         #3. Run one of the following options
-        compute_SGS = False           # Compute the Scene Graph Summary
+        compute_SGS = True           # Compute the Scene Graph Summary
         compute_coverage_mat = False  # Associate training COCO images to SGS: coverage matrix (7 minutes for experiment 8)
-        print_SGS_graphs = False      # Plot SGS scene graphs
-        print_SGS_images = False       # Plot images associated to SGS graphs
-        pairing_method = 'img_max'    # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
+        print_SGS_graphs = True      # Plot SGS scene graphs
+        print_SGS_images = True       # Plot images associated to SGS graphs
+        pairing_method = 'img_min'    # Method used to associate images to SGS graphs (see associate_img_to_sgs() in sgs.pyx)
         # img_min, img_max, img_avg, std
 
         #4. Run final evaluation
@@ -81,6 +82,8 @@ def main():
             create_COCO_images_subset()
         elif RUN_CONFIG.dataset == 'COCO_subset2':
             create_COCO_images_subset2()
+        elif RUN_CONFIG.dataset == 'COCO_subset3':
+            create_COCO_images_subset3()
 
         print(f"Selected experiment: {experiment} \non dataset {RUN_CONFIG.dataset}")
         start_time = datetime.now()

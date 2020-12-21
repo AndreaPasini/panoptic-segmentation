@@ -49,24 +49,32 @@ COCO_train_graphs_json_path = os.path.join(position_dataset_res_dir, 'train_grap
 COCO_train_graphs_subset_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset.json')
 # Subset2 of scene graphs for Paper experiments
 COCO_train_graphs_subset2_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset2.json')
+# Subset3 of scene graphs for Paper experiments
+COCO_train_graphs_subset3_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset3.json')
 # Scene graphs of predictions (Deeplab + Matterport rcnn) in COCO val
 COCO_panoptic_val_graphs_json_path = os.path.join(position_dataset_res_dir, 'panopt_val_graphs.json')
 # Scene graphs of VG train
 VG_train_graphs_json_path = os.path.join(VG_dir, 'train_graphs.json')
 
+# SImS: semantic image summarization
+
 """
 Pairwise Relationship Summary (PRS)
 """
-COCO_PRS_dir = os.path.join(COCO_dir, 'PRS/')
-VG_PRS_dir = os.path.join(VG_dir, 'PRS/')
+COCO_PRS_dir = os.path.join(COCO_dir, 'SImS/PRS/')
+VG_PRS_dir = os.path.join(VG_dir, 'SImS/PRS/')
 COCO_PRS_json_path = os.path.join(COCO_PRS_dir, 'PRS.json') # PRS extracted from Validation Images (COCO)
 VG_PRS_json_path = os.path.join(VG_PRS_dir, 'PRS.json') # PRS extracted from VG train
 
 """
 SGS (Scene Graph Summary) generation, with graph mining
 """
-COCO_SGS_dir = os.path.join(COCO_dir, 'SGS')
-VG_SGS_dir = os.path.join(VG_dir, 'SGS')
+COCO_SGS_dir = os.path.join(COCO_dir, 'SImS/SGS')
+VG_SGS_dir = os.path.join(VG_dir, 'SImS/SGS')
+
+
+
+## Other minor experiments:
 
 """
 Conceptnet

@@ -9,7 +9,7 @@ import numpy as np
 from config import COCO_SGS_dir, COCO_PRS_json_path, COCO_train_graphs_json_path, VG_SGS_dir, \
     VG_PRS_json_path, VG_train_graphs_json_path, position_labels_csv_path, VG_objects_json_path, \
     VG_predicates_json_path, COCO_train_graphs_subset_json_path, COCO_ann_train_dir, COCO_train_json_path, \
-    VG_train_json_path, COCO_PRS_dir, VG_PRS_dir, COCO_train_graphs_subset2_json_path, COCO_img_train_dir
+    VG_train_json_path, COCO_PRS_dir, VG_PRS_dir, COCO_train_graphs_subset2_json_path, COCO_train_graphs_subset3_json_path, COCO_img_train_dir
 from panopticapi.utils import load_panoptic_categ_list
 
 class SImS_config:
@@ -22,7 +22,7 @@ class SImS_config:
             self.scene_graphs_json_path = COCO_train_graphs_json_path
             self.PRS_dir = COCO_PRS_dir
             self.PRS_json_path = COCO_PRS_json_path
-            self.SGS_dir = COCO_SGS_dir
+            self.SGS_dir = COCO_SGS_dir + "/all/"
         elif dataset == 'COCO_subset':
             self.ann_dir = COCO_ann_train_dir
             self.img_dir = COCO_img_train_dir
@@ -39,6 +39,14 @@ class SImS_config:
             self.PRS_dir = COCO_PRS_dir
             self.PRS_json_path = COCO_PRS_json_path
             self.SGS_dir = COCO_SGS_dir + "/subset2/"
+        elif dataset == 'COCO_subset3':
+            self.ann_dir = COCO_ann_train_dir
+            self.img_dir = COCO_img_train_dir
+            self.ann_json_path = COCO_train_json_path
+            self.scene_graphs_json_path = COCO_train_graphs_subset3_json_path
+            self.PRS_dir = COCO_PRS_dir
+            self.PRS_json_path = COCO_PRS_json_path
+            self.SGS_dir = COCO_SGS_dir + "/subset3/"
         elif dataset == 'VG':
             self.ann_dir = None
             self.img_dir = None
@@ -92,11 +100,11 @@ class SImS_config:
         """
         :return: object categories and relationship categories for the configured dataset
         """
-        if self.dataset == 'COCO' or self.dataset == 'COCO_subset' or self.dataset == 'COCO_subset2':
+        if self.dataset == 'COCO' or self.dataset == 'COCO_subset' or self.dataset == 'COCO_subset2' or self.dataset == 'COCO_subset3':
             obj_categories = load_panoptic_categ_list()
             with open(position_labels_csv_path) as f:
                 rel_categories = tuple(s.strip() for s in f.readlines())
-        elif self.config['dataset'] == 'VG':
+        elif self.dataset == 'VG':
             with open(VG_objects_json_path) as f:
                 obj_categories = {i: l for i, l in enumerate(json.load(f))}
             with open(VG_predicates_json_path) as f:

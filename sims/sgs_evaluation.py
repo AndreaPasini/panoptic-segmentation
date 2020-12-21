@@ -5,11 +5,9 @@ from sims.graph_algorithms import compute_diversity, compute_coverage_matrix
 pyximport.install(language_level=3)
 from panopticapi.utils import read_train_img_captions
 
-from scipy.stats import entropy
 import json
 from config import COCO_PRS_json_path, COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, \
-    COCO_train_graphs_subset2_json_path, COCO_SGS_dir
-from sims.prs import filter_PRS_histograms, load_PRS, edge_pruning, node_pruning
+    COCO_train_graphs_subset2_json_path, COCO_train_graphs_subset3_json_path, COCO_SGS_dir
 from sims.sgs import load_SGS, SGS_to_represented_imgs, prepare_graphs_with_PRS, SGS_to_represented_img_graphs
 import numpy as np
 import os
@@ -263,4 +261,35 @@ def create_COCO_images_subset2():
         json.dump(all_graphs, f)
     print("Done.")
 
+def create_COCO_images_subset3():
+    """
+    Create a subset of COCO images, designed for comparing SImS against competitors
+    Select images whose caption contains either "skiing" or "driving".
+    """
+    if os.path.exists(COCO_train_graphs_subset3_json_path):
+        return
 
+    if not os.path.exists(COCO_SGS_dir + "/subset3/"):
+        os.makedirs(COCO_SGS_dir + "/subset3/")
+
+    # Remove old data (avoids conflicts with old instances of this dataset)
+    for file in os.listdir(COCO_SGS_dir + "/subset3/"):
+        if file.startswith('preparedGraphs') or file.startswith("sgs_"):
+            os.remove(COCO_SGS_dir + "/subset3/" + file)
+
+    print("Selecting COCO subset for article...")
+    img_captions = read_train_img_captions('train')
+    sel_img_captions = select_COCO_images_by_caption(img_captions, ['garden', 'church'])
+
+    # Read COCO Train graphs
+    with open(COCO_train_graphs_json_path, 'r') as f:
+        train_graphs = json.load(f)
+
+    all_graphs = []
+    for g in train_graphs:
+        if g['graph']['name'] in sel_img_captions:
+            all_graphs.append(g)
+
+    with open(COCO_train_graphs_subset3_json_path, 'w') as f:
+        json.dump(all_graphs, f)
+    print("Done.")
