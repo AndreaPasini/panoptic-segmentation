@@ -131,7 +131,7 @@ def read_BOW_images(dataset='COCO_subset'):
     """
     # Cluster images with kmedoids
     X = pd.read_csv(os.path.join(competitors_dir, "bow_images.pd"), index_col=0)
-    if dataset=='COCO_subset' or dataset=='COCO_subset2':
+    if dataset!='COCO':
         # Select experiment images
         if dataset == 'COCO_subset':
             input_path = COCO_train_graphs_subset_json_path
