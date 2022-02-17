@@ -51,6 +51,13 @@ COCO_train_graphs_subset_json_path = os.path.join(position_dataset_res_dir, 'tra
 COCO_train_graphs_subset2_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset2.json')
 # Subset3 of scene graphs for Paper experiments
 COCO_train_graphs_subset3_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset3.json')
+# Subset 1 with aggregated edge labels
+COCO_train_graphs_subset_agg_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset2_agg.json')
+# Subset2 with aggregated edge labels
+COCO_train_graphs_subset2_agg_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset2_agg.json')
+# Subset3 with aggregated edge labels
+COCO_train_graphs_subset3_agg_json_path = os.path.join(position_dataset_res_dir, 'train_graphs_subset3_agg.json')
+
 # Scene graphs of predictions (Deeplab + Matterport rcnn) in COCO val
 COCO_panoptic_val_graphs_json_path = os.path.join(position_dataset_res_dir, 'panopt_val_graphs.json')
 # Scene graphs of VG train
@@ -65,7 +72,8 @@ COCO_PRS_dir = os.path.join(COCO_dir, 'SImS/PRS/')
 VG_PRS_dir = os.path.join(VG_dir, 'SImS/PRS/')
 COCO_PRS_json_path = os.path.join(COCO_PRS_dir, 'PRS.json') # PRS extracted from Validation Images (COCO)
 VG_PRS_json_path = os.path.join(VG_PRS_dir, 'PRS.json') # PRS extracted from VG train
-
+COCO_PRS_agg2_json_path = os.path.join(COCO_PRS_dir, 'PRS_agg2.json') # PRS with aggregated edge labels. Subset2
+COCO_PRS_agg3_json_path = os.path.join(COCO_PRS_dir, 'PRS_agg3.json') # PRS with aggregated edge labels. Subset3
 """
 SGS (Scene Graph Summary) generation, with graph mining
 """

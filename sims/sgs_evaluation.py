@@ -1,13 +1,15 @@
 import pyximport
 
-from sims.graph_algorithms import compute_diversity, compute_coverage_matrix
+from sims.graph_algorithms import compute_diversity, compute_coverage_matrix, compute_diversity_ne
 
 pyximport.install(language_level=3)
 from panopticapi.utils import read_train_img_captions
 
 import json
 from config import COCO_PRS_json_path, COCO_train_graphs_json_path, COCO_train_graphs_subset_json_path, \
-    COCO_train_graphs_subset2_json_path, COCO_train_graphs_subset3_json_path, COCO_SGS_dir
+    COCO_train_graphs_subset2_json_path, COCO_train_graphs_subset3_json_path, COCO_SGS_dir, \
+    COCO_train_graphs_subset2_agg_json_path, COCO_train_graphs_subset3_agg_json_path, \
+    COCO_train_graphs_subset_agg_json_path
 from sims.sgs import load_SGS, SGS_to_represented_imgs, prepare_graphs_with_PRS, SGS_to_represented_img_graphs
 import numpy as np
 import os
@@ -36,7 +38,8 @@ def compute_coverage_mat_sims(config, method):
         suffix = ""
     else:
         suffix = '_'+method
-    output_file = os.path.join(config.SGS_dir, f"coverage_mat_{experiment_name}{suffix}.csv")
+    output_file_c = os.path.join(config.SGS_dir, f"coverage_mat_{experiment_name}{suffix}.csv")
+    output_file_o = os.path.join(config.SGS_dir, f"overlap_mat_{experiment_name}{suffix}.csv")
 
     # Read input collection
     tmp = config.SGS_params
@@ -52,9 +55,9 @@ def compute_coverage_mat_sims(config, method):
         summary_graphs = load_SGS(config, min_nodes=2) # Read frequent graphs, only those with >=2 nodes
 
     print("Computing coverage matrix...")
-    cmatrix = compute_coverage_matrix(input_graphs_filtered, summary_graphs)
-    cmatrix.to_csv(output_file, sep=",", index=False)
-
+    cmatrix, omatrix = compute_coverage_matrix(input_graphs_filtered, summary_graphs)
+    cmatrix.to_csv(output_file_c, sep=",", index=False)
+    omatrix.to_csv(output_file_o, sep=",", index=False)
 def evaluate_SGS(simsConf, topk=None, method='std'):
     """
     Evaluate SImS SGS.
@@ -80,6 +83,9 @@ def evaluate_SGS(simsConf, topk=None, method='std'):
     coverage_mat = pd.read_csv(os.path.join(simsConf.SGS_dir,
                                f"coverage_mat_{simsConf.getSGS_experiment_name()}{suffix}.csv"),
                                index_col=None)
+    overlap_mat = pd.read_csv(os.path.join(simsConf.SGS_dir,
+                               f"overlap_mat_{simsConf.getSGS_experiment_name()}{suffix}.csv"),
+                               index_col=None)
 
     # Read frequent graphs (consider only graphs with at least 2 nodes)
     if method!='std':
@@ -89,7 +95,7 @@ def evaluate_SGS(simsConf, topk=None, method='std'):
         summary_graphs = sgs
 
 
-    res =  evaluate_summary_graphs(summary_graphs, coverage_mat, topk)
+    res =  evaluate_summary_graphs(summary_graphs, coverage_mat, overlap_mat, topk)
     config = simsConf.SGS_params
     if 'minsup' not in config:
         config['minsup'] = None
@@ -110,10 +116,12 @@ def evaluate_SGS_df(simsConf, topk=None):
     res_df = pd.DataFrame([res], columns=["Minsup", "Edge pruning", "Node pruning", "N. graphs",
                                             "Avg. nodes", "Std. nodes",
                                             "Coverage",
-                                            "Diversity"])
+                                            "Coverage-overlap",
+                                            "Diversity",
+                                            "Diversity-ne"])
     return res_df
 
-def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
+def evaluate_summary_graphs(summary_graphs, coverage_mat, overlap_mat, topk=None):
     """
     Evaluate a graph summary (SImS or Competitors)
     :param summary_graphs: list of summary graphs
@@ -160,11 +168,15 @@ def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
     if topk:    # Select only topk graphs
         ids = [str(g['g']['graph']['name']) for g in summary_graphs]
         coverage_mat = coverage_mat[ids]
+        overlap_mat = overlap_mat[ids]
     covered = (coverage_mat.sum(axis=1) > 0).sum()
     coverage = covered / len(coverage_mat)
+    coverage_ov = overlap_mat.max(axis=1).mean()
+
 
     # Compute diversity
     diversity = compute_diversity(summary_graphs)
+    diversity_ne = compute_diversity_ne(summary_graphs)
 
     res_dict = {"N. graphs": len(summary_graphs),
                 "N. distinct class sets": len(dist_sets),
@@ -174,7 +186,9 @@ def evaluate_summary_graphs(summary_graphs, coverage_mat, topk=None):
                 "Distinct Node Ratio":round(nodes_nodes_dist/len(summary_graphs),2),
                 "Std. nodes": round(np.std(std_nodes),2),
                 "Coverage" : round(coverage,2),
-                "Diversity" : round(diversity, 2)}
+                "Coverage-overlap": round(coverage_ov, 2),
+                "Diversity" : round(diversity, 2),
+                "Diversity-ne" : round(diversity_ne, 2)}
     return res_dict
 
 
@@ -293,3 +307,48 @@ def create_COCO_images_subset3():
     with open(COCO_train_graphs_subset3_json_path, 'w') as f:
         json.dump(all_graphs, f)
     print("Done.")
+
+def aggregate_edge_labels(subset):
+    """
+    Aggregate scene graphs edge labels for the specified subset (2 or 3)
+    """
+    if subset == 1:
+        inputpath = COCO_train_graphs_subset_json_path
+        outpath = COCO_train_graphs_subset_agg_json_path
+    elif subset == 2:
+        inputpath = COCO_train_graphs_subset2_json_path
+        outpath = COCO_train_graphs_subset2_agg_json_path
+    elif subset==3:
+        inputpath = COCO_train_graphs_subset3_json_path
+        outpath = COCO_train_graphs_subset3_agg_json_path
+    else:
+        return
+
+    if os.path.exists(outpath):
+        return
+
+    # Read subset
+    with open(inputpath, 'r') as f:
+        train_graphs = json.load(f)
+
+    # Edgemap
+    edgemap = {
+        'above' : 'higher',
+        'side-up': 'higher',
+        'below' : 'lower',
+        'side-down': 'lower',
+
+        'on' : 'on',
+        'hanging' : 'hanging',
+        'inside' : 'inside',
+        'around' : 'around',
+        'side' : 'side'
+    }
+
+    # Aggregate labels for the specified graphs
+    for g in train_graphs:
+        for e in g['links']:
+            e['pos'] = edgemap[e['pos']]
+
+    with open(outpath, 'w') as f:
+        json.dump(train_graphs, f)

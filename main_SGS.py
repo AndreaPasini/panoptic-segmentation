@@ -8,10 +8,11 @@ This file provides the code for running the following experiments:
 import pyximport
 pyximport.install(language_level=3)
 
+from sims.prs import create_PRS
 from datetime import datetime
 from sims.sims_config import SImS_config
 from sims.sgs_evaluation import evaluate_SGS, create_COCO_images_subset, create_COCO_images_subset2, \
-    create_COCO_images_subset3, compute_coverage_mat_sims
+    create_COCO_images_subset3, compute_coverage_mat_sims, aggregate_edge_labels
 from sims.sgs import build_SGS, load_and_print_SGS, load_and_print_SGS_images
 import pandas as pd
 import sys
@@ -26,7 +27,9 @@ def main():
         #dataset = 'COCO'
         #dataset = 'COCO_subset' # Experiment with only 4 COCO scenes (for paper comparisons)
         #dataset = 'COCO_subset2' # Experiment with images selected by COCO caption (driving skiing)
-        dataset = 'COCO_subset3'  # Experiment with images selected by COCO caption (garden, church)
+        #dataset = 'COCO_subset3'  # Experiment with images selected by COCO caption (garden, church)
+        dataset = 'COCO_subset2_agg' # Subset 2 experiment with aggregated edge labels
+        #dataset = 'COCO_subset3_agg' # Subset 3 experiment with aggregated edge labels
         # dataset = 'VG'
 
         #3. Run one of the following options
@@ -84,6 +87,14 @@ def main():
             create_COCO_images_subset2()
         elif RUN_CONFIG.dataset == 'COCO_subset3':
             create_COCO_images_subset3()
+        elif RUN_CONFIG.dataset == 'COCO_subset2_agg':
+            create_COCO_images_subset2()
+            aggregate_edge_labels(subset=2)
+            create_PRS(config.scene_graphs_json_path, config.PRS_dir, config.PRS_json_path)
+        elif RUN_CONFIG.dataset == 'COCO_subset3_agg':
+            create_COCO_images_subset3()
+            aggregate_edge_labels(subset=3)
+            create_PRS(config.scene_graphs_json_path, config.PRS_dir, config.PRS_json_path)
 
         print(f"Selected experiment: {experiment} \non dataset {RUN_CONFIG.dataset}")
         start_time = datetime.now()
@@ -136,7 +147,9 @@ def main():
         res_df = pd.DataFrame(results, columns=["Minsup","Edge pruning","Node pruning","N. graphs",
                                                 "Avg. nodes","Std. nodes",
                                                 "Coverage",
-                                                "Diversity"])
+                                                "Coverage-overlap",
+                                                "Diversity",
+                                                "Diversity-ne"])
         if RUN_CONFIG.pairing_method == 'std':
             suffix = ""
         else:

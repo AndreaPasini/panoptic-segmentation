@@ -71,17 +71,19 @@ def subgraph_isomorphism(subgraph, graph, induced=False):
 
 def get_isomorphism_count_vect(graph, sgs_graphs, min_nodes=2):
     """
-    Return a count-vector with shape [len(sgs_graphs)].
+    Return 2 count-vectors with shape [len(sgs_graphs)].
     For each SGS graph it performs sub-graph isomorphism with respect to the input graph.
-    Each element in the vector counts the number of occurrences of an SGS graph inside the input graph.
+    a) Each element in the vector counts the number of occurrences of an SGS graph inside the input graph.
+    b) Each element in the vector shows the maximum overlap (%) of an SGS graph inside the input graph.
     :param graph: json graph
     :param sgs_graphs: list of graphs in the SGS
     :param min_nodes: minimum number of nodes for a graph to be considered.
                 If the condition is not satisfied, the SGS graph has 0 coverage for all the
                 collection graphs (e.g. column with all 0).
-    :return: the count-vector (Numpy) with the number of found instances for each SGS graph
+    :return: tuple (cvector,overlap) with the count-vectors (Numpy) with the number of found instances for each SGS graph
     """
     cvector = np.zeros(len(sgs_graphs))
+    overlap = np.zeros(len(sgs_graphs))
     g_nodes = {n['label'] for n in graph['nodes']}
     for i, fgraph in enumerate(sgs_graphs):
         if len(fgraph['g']['nodes']) >= min_nodes: # No coverage if min nodes not satisfied
@@ -90,11 +92,17 @@ def get_isomorphism_count_vect(graph, sgs_graphs, min_nodes=2):
             if len(fg_nodes - g_nodes) == 0:
                 match_list = subgraph_isomorphism(fgraph['g'], graph)
                 cvector[i] += len(match_list)
-    return cvector
+                overlap_i = len(fg_nodes)/len(g_nodes)
+                if overlap_i > overlap[i]:
+                    overlap[i] = overlap_i
+    return cvector, overlap
 
 def compute_coverage_matrix(collection_graphs, sgs_graphs, min_nodes=2):
     """
-    Compute the coverage matrix for a given summary (SGS) with respect to the input collection.
+    Coverage = % represented graphs
+    Overlap = for a represented image, % of equal nodes with the frequent graph
+    a) Compute the coverage matrix for a given summary (SGS) with respect to the input collection.
+    b) Compute the overlap matrix for a given summary (SGS) with respect to the input collection.
     Each row is associated to one of the collection graphs (e.g., g_i).
     Every element in the row counts the number of occurrences of each SGS graph inside g_i.
 
@@ -105,23 +113,27 @@ def compute_coverage_matrix(collection_graphs, sgs_graphs, min_nodes=2):
                     since they are too generic).
                     If the condition is not satisfied, the SGS graph has 0 coverage for all the
                     collection graphs (e.g. column with all 0).
-    :return: coverage matrix (pandas DataFrame)
+    :return: coverage matrix (pandas DataFrame), overlap matrix (pandas DataFrame)
     """
     g_ids = [g['g']['graph']['name'] for g in sgs_graphs]
     cmatrix = []
+    omatrix = []
     pbar = tqdm(total=len(collection_graphs))
 
     for g in collection_graphs:
-        cmatrix.append(get_isomorphism_count_vect(g, sgs_graphs, min_nodes))
+        cvector, overlap = get_isomorphism_count_vect(g, sgs_graphs, min_nodes)
+        cmatrix.append(cvector)
+        omatrix.append(overlap)
         pbar.update()
     pbar.close()
     cmatrix = pd.DataFrame(cmatrix, columns=g_ids)
-    return cmatrix
+    omatrix = pd.DataFrame(omatrix, columns=g_ids)
+    return cmatrix, omatrix
 
 
 def compute_diversity(sgs_graphs):
     """
-    Given json graphs, compute diversity score.
+    Given json graphs, compute diversity score (using only node sets).
     :param sgs_graphs: list of the SGS json graphs
     :return: diversity score (float)
     """
@@ -153,3 +165,38 @@ def compute_diversity(sgs_graphs):
             distances += 1-len(intersect)/len(union)
 
     return distances/n
+
+def compute_diversity_ne(sgs_graphs):
+    """
+    Given json graphs, compute diversity score, using nodes and edges (ne).
+    :param sgs_graphs: list of the SGS json graphs
+    :return: diversity score (float)
+    """
+    if len(sgs_graphs) == 1:
+        if len(sgs_graphs[0]['g']['nodes']) > 0:
+            return 1  # 1 graph, with at least 1 node. Diversity=1
+        else:
+            return 0  # 1 empty graph. Diversity=0
+
+    edge_sets = []
+    for g in sgs_graphs:
+        nodes_map = {node['id']: node['label'] for node in g['g']['nodes']}
+        edge_sets.append({(nodes_map[l['s']],l['pos'],nodes_map[l['r']]) for l in g['g']['links']})
+
+    distances = 0
+    n = 0
+    for i in range(len(edge_sets)):
+        for j in range(i + 1, len(edge_sets)):
+            si = edge_sets[i]
+            sj = edge_sets[j]
+            n += 1  # Count this pair
+
+            # Distance between a void node and a non-void set is 0
+            if len(si) == 0 or len(sj) == 0:
+                continue
+
+            intersect = si & sj
+            union = si | sj
+            distances += 1 - len(intersect) / len(union)
+
+    return distances / n

@@ -16,18 +16,19 @@ from datetime import datetime
 
 class RUN_CONFIG:
     dataset = 'COCO' # VG
-
+    create_graphs = False
 if __name__ == "__main__":
     start_time = datetime.now()
     config = SImS_config(RUN_CONFIG.dataset)
 
     # Compute scene graphs (may take 4 hours for COCO)
-    if RUN_CONFIG.dataset == 'COCO':
-        create_scene_graphs(position_classifier_path, config.ann_json_path, config.ann_dir,
-                            config.scene_graphs_json_path)
-    elif RUN_CONFIG.dataset == 'VG':
-        config.setPRS_params(minsup=20) # Use 20, instead of median
-        create_scene_graphs_vg(config.ann_json_path, config.scene_graphs_json_path)
+    if RUN_CONFIG.create_graphs:
+        if RUN_CONFIG.dataset == 'COCO':
+            create_scene_graphs(position_classifier_path, config.ann_json_path, config.ann_dir,
+                                config.scene_graphs_json_path)
+        elif RUN_CONFIG.dataset == 'VG':
+            config.setPRS_params(minsup=20) # Use 20, instead of median
+            create_scene_graphs_vg(config.ann_json_path, config.scene_graphs_json_path)
     # Build PRS (about 1 minute for COCO)
     create_PRS(config.scene_graphs_json_path, config.PRS_dir, config.PRS_json_path)
     # Build SGS (about 10 seconds for COCO)
